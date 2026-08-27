@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    :root {
+      --ink: #26394A;
+      --cream: #FBFAF7;
+      --coral: #E8877A;
+      --coral-hover: #D97365;
+      --mint: #5FA99E;
+      --mint-dark: #46867D;
+      --gold: #D2A54B;
+      --gold-dark: #B88B35;
+      --bg: #F4F6F8;
+      --card-bg: #FFFFFF;
+      --border: #E2E8F0;
+      --text-muted: #64748B;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 320px;
+      font-family: -apple-system, BlinkMacSystemFont, "Sarabun", "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      padding: 16px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo-badge {
+      background: var(--ink);
+      color: var(--cream);
+      font-weight: 700;
+      font-size: 14px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    .title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .status-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #CBD5E1;
+    }
+
+    .dot.recording {
+      background: var(--coral);
+      box-shadow: 0 0 0 3px rgba(232, 135, 122, 0.3);
+      animation: pulse 1.5s infinite;
+    }
+
+    .dot.paused {
+      background: var(--gold);
+      box-shadow: 0 0 0 3px rgba(210, 165, 75, 0.3);
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.15); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+
+    .step-count {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--ink);
+      margin: 4px 0;
+    }
+
+    .step-label {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--ink);
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      background: #FFF;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--mint);
+    }
+
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-row button {
+      flex: 1;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-record {
+      background: var(--coral);
+      color: white;
+    }
+    .btn-record:hover {
+      background: var(--coral-hover);
+    }
+
+    .btn-append {
+      background: #FFF;
+      color: var(--ink);
+      border: 1px solid var(--coral);
+    }
+    .btn-append:hover {
+      background: rgba(232, 135, 122, 0.1);
+    }
+
+    .btn-pause {
+      background: var(--gold);
+      color: white;
+    }
+    .btn-pause:hover {
+      background: var(--gold-dark);
+    }
+
+    .btn-resume {
+      background: var(--coral);
+      color: white;
+    }
+    .btn-resume:hover {
+      background: var(--coral-hover);
+    }
+
+    .btn-stop {
+      background: var(--mint);
+      color: white;
+    }
+    .btn-stop:hover {
+      background: var(--mint-dark);
+    }
+
+    .btn-view {
+      background: var(--ink);
+      color: white;
+    }
+    .btn-view:hover {
+      opacity: 0.9;
+    }
+
+    .footer-note {
+      margin-top: 12px;
+      font-size: 11px;
+      color: var(--text-muted);
+      text-align: center;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="logo-badge">FLOW</div>
+    <div class="title">GuideFlow</div>
+  </div>
+
+  <div class="form-group" id="titleGroup">
+    <label for="guideTitle">ชื่อคู่มือ (Guide Title)</label>
+    <input type="text" id="guideTitle" placeholder="เช่น วิธีเข้าสู่ระบบและสร้าง Prompt ใน Gemini" />
+  </div>
+
+  <div class="status-card">
+    <div class="status-indicator">
+      <span class="dot" id="statusDot"></span>
+      <span id="statusText">พร้อมเริ่มบันทึก</span>
+    </div>
+    <div class="step-count" id="stepsCount">0</div>
+    <div class="step-label">ขั้นตอนที่บันทึกแล้ว</div>
+  </div>
+
+  <div class="btn-group">
+    <!-- Idle state -->
+    <button class="btn-record" id="btnStart">
+      <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+        <circle cx="8" cy="8" r="7"/>
+      </svg>
+      เริ่มอัดใหม่ (Start Fresh)
+    </button>
+    <button class="btn-append" id="btnAppend" style="display: none;">
+      <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+      </svg>
+      อัดต่อจากเดิม (Append)
+    </button>
+
+    <!-- Recording state -->
+    <div class="btn-row" id="recordingActions" style="display: none;">
+      <button class="btn-pause" id="btnPause">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z"/>
+        </svg>
+        พักชั่วคราว
+      </button>
+      <button class="btn-stop" id="btnStopRec">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+          <rect x="4" y="4" width="8" height="8" rx="1"/>
+        </svg>
+        เสร็จสิ้น
+      </button>
+    </div>
+
+    <!-- Paused state -->
+    <div class="btn-row" id="pausedActions" style="display: none;">
+      <button class="btn-resume" id="btnResume">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+          <polygon points="5,3 13,8 5,13"/>
+        </svg>
+        บันทึกต่อ (Resume)
+      </button>
+      <button class="btn-stop" id="btnStopPaused">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+          <rect x="4" y="4" width="8" height="8" rx="1"/>
+        </svg>
+        เสร็จสิ้น
+      </button>
+    </div>
+
+    <!-- Viewer button -->
+    <button class="btn-view" id="btnOpenViewer" style="display: none;">
+      เปิดดูคู่มือล่าสุด (Open Viewer)
+    </button>
+  </div>
+
+  <div class="footer-note">
+    💡 คลิกปุ่มหรือพิมพ์บนหน้าเว็บตามปกติ Extension จะแคปจอและมาร์กจุดให้เอง 100%
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
