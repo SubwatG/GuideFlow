@@ -1,5 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   const guideTitleInput = document.getElementById("guideTitle");
+  const captureModeSelect = document.getElementById("captureMode");
+  const captureModeGroup = document.getElementById("captureModeGroup");
   const titleGroup = document.getElementById("titleGroup");
   const statusDot = document.getElementById("statusDot");
   const statusText = document.getElementById("statusText");
@@ -26,11 +28,15 @@ document.addEventListener("DOMContentLoaded", () => {
       if (res.meta && res.meta.title && !guideTitleInput.value) {
         guideTitleInput.value = res.meta.title;
       }
+      if (res.meta && res.meta.captureMode) {
+        captureModeSelect.value = res.meta.captureMode;
+      }
 
       if (status === "recording") {
         statusDot.className = "dot recording";
         statusText.textContent = "กำลังบันทึกหน้าจอ...";
         titleGroup.style.display = "none";
+        captureModeGroup.style.display = "none";
         btnStart.style.display = "none";
         btnAppend.style.display = "none";
         recordingActions.style.display = "flex";
@@ -40,6 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
         statusDot.className = "dot paused";
         statusText.textContent = "พักการบันทึกชั่วคราว";
         titleGroup.style.display = "none";
+        captureModeGroup.style.display = "none";
         btnStart.style.display = "none";
         btnAppend.style.display = "none";
         recordingActions.style.display = "none";
@@ -49,6 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
         statusDot.className = "dot";
         statusText.textContent = count > 0 ? "บันทึกเสร็จสิ้น" : "พร้อมเริ่มบันทึก";
         titleGroup.style.display = "block";
+        captureModeGroup.style.display = "block";
         btnStart.style.display = "flex";
         btnAppend.style.display = count > 0 ? "flex" : "none";
         recordingActions.style.display = "none";
@@ -60,7 +68,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   btnStart.addEventListener("click", () => {
     const title = guideTitleInput.value.trim() || "คู่มือการใช้งานระบบ";
-    chrome.runtime.sendMessage({ type: "START_RECORDING", title, append: false }, () => {
+    chrome.runtime.sendMessage({ type: "START_RECORDING", title, captureMode: captureModeSelect.value, append: false }, () => {
       updateUI();
       window.close();
     });
@@ -68,7 +76,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   btnAppend.addEventListener("click", () => {
     const title = guideTitleInput.value.trim() || "คู่มือการใช้งานระบบ";
-    chrome.runtime.sendMessage({ type: "START_RECORDING", title, append: true }, () => {
+    chrome.runtime.sendMessage({ type: "START_RECORDING", title, captureMode: captureModeSelect.value, append: true }, () => {
       updateUI();
       window.close();
     });

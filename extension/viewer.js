@@ -34,6 +34,7 @@ function startApp() {
   const panZoomContent = document.getElementById("panZoomContent");
   const spotlightRing = document.getElementById("spotlightRing");
   const targetBox = document.getElementById("targetBox");
+
   const timelineBar = document.getElementById("timelineBar");
 
   const btnZoomIn = document.getElementById("btnZoomIn");
@@ -171,8 +172,10 @@ function startApp() {
       spotlightRing.style.display = "block";
       spotlightRing.style.left = `${step.coords.xPercent}%`;
       spotlightRing.style.top = `${step.coords.yPercent}%`;
+
     } else {
       spotlightRing.style.display = "none";
+
     }
 
     // Target box
@@ -217,6 +220,7 @@ function startApp() {
             <div class="ring-pulse"></div>
             <div class="ring-center-dot"></div>
           </div>
+
         `;
       }
 
@@ -229,13 +233,20 @@ function startApp() {
         `;
       }
 
+      const screenshots = Array.isArray(step.screenshots) && step.screenshots.length
+        ? step.screenshots
+        : [step.screenshot];
+      const imagesHtml = screenshots.map((screenshot, imageIndex) => `
+        <img src="${screenshot}" alt="Step ${idx + 1} ส่วนที่ ${imageIndex + 1}" />
+      `).join("");
+
       card.innerHTML = `
         <div class="doc-step-header">
           <span class="step-badge">Step ${idx + 1}</span>
           <span class="doc-step-title">${step.description || `ขั้นตอนที่ ${idx + 1}`}</span>
         </div>
         <div class="doc-step-image-wrap">
-          <img src="${step.screenshot}" alt="Step ${idx + 1}" />
+          ${imagesHtml}
           ${ringHtml}
         </div>
         ${tipHtml}

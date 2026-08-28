@@ -1,17 +1,25 @@
 // Background Service Worker - GuideFlow
+importScripts("capture-utils.js");
+
+const captureQueue = [];
+let captureInProgress = false;
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "START_RECORDING") {
     const isAppend = !!message.append;
-    chrome.storage.local.get(["currentSession", "sessionMeta"], (res) => {
-      const currentSession = isAppend && res.currentSession ? res.currentSession : [];
-      const sessionMeta = isAppend && res.sessionMeta ? res.sessionMeta : {
-        title: message.title || "คู่มือการใช้งานระบบ",
-        startTime: Date.now()
-      };
-      chrome.storage.local.set({ status: "recording", currentSession, sessionMeta }, () => {
-        updateBadge("recording", currentSession.length);
-        sendResponse({ status: "ok", recording: true, count: currentSession.length });
+    ensureActiveTabContentScript(() => {
+      chrome.storage.local.get(["currentSession", "sessionMeta"], (res) => {
+        const currentSession = isAppend && res.currentSession ? res.currentSession : [];
+        const sessionMeta = isAppend && res.sessionMeta ? res.sessionMeta : {
+          title: message.title || "คู่มือการใช้งานระบบ",
+          startTime: Date.now(),
+          captureMode: message.captureMode === "fullpage" ? "fullpage" : "viewport"
+        };
+        if (!sessionMeta.captureMode) sessionMeta.captureMode = "viewport";
+        chrome.storage.local.set({ status: "recording", currentSession, sessionMeta }, () => {
+          updateBadge("recording", currentSession.length);
+          sendResponse({ status: "ok", recording: true, count: currentSession.length });
+        });
       });
     });
     return true;
@@ -52,43 +60,149 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({
         status: res.status || "idle",
         stepsCount: res.currentSession ? res.currentSession.length : 0,
-        meta: res.sessionMeta || { title: "คู่มือการใช้งานระบบ" }
+        meta: res.sessionMeta || { title: "คู่มือการใช้งานระบบ", captureMode: "viewport" }
       });
     });
     return true;
   }
 
   if (message.type === "RECORD_CLICK") {
-    chrome.storage.local.get(["status", "currentSession"], (res) => {
-      if (res.status !== "recording") return;
-
-      chrome.tabs.captureVisibleTab(sender.tab.windowId, { format: "png" }, (dataUrl) => {
-        if (chrome.runtime.lastError || !dataUrl) return;
-
-        const currentSession = res.currentSession || [];
-        const step = {
-          id: "step_" + Date.now(),
-          timestamp: Date.now(),
-          url: sender.tab.url,
-          pageTitle: sender.tab.title,
-          action: message.action || "คลิก",
-          elementTag: message.elementTag,
-          elementText: message.elementText,
-          description: message.description || `คลิกที่ ${message.elementText ? '"' + message.elementText + '"' : message.elementTag}`,
-          coords: message.coords,
-          viewport: message.viewport,
-          screenshot: dataUrl
-        };
-
-        currentSession.push(step);
-        chrome.storage.local.set({ currentSession }, () => {
-          updateBadge("recording", currentSession.length);
-        });
-      });
-    });
+    captureQueue.push({ message, sender });
+    processCaptureQueue();
     return true;
   }
 });
+
+function processCaptureQueue() {
+  if (captureInProgress || captureQueue.length === 0) return;
+  captureInProgress = true;
+  const job = captureQueue.shift();
+
+  chrome.storage.local.get(["status", "currentSession", "sessionMeta"], async (res) => {
+    if (res.status !== "recording") {
+      captureInProgress = false;
+      processCaptureQueue();
+      return;
+    }
+
+    try {
+      const meta = res.sessionMeta || {};
+      const captureMode = meta.captureMode === "fullpage" ? "fullpage" : "viewport";
+      const screenshots = await captureStepImages(job.sender.tab, captureMode);
+      const currentSession = res.currentSession || [];
+      const now = Date.now();
+      const step = {
+        id: "step_" + now + "_" + currentSession.length,
+        timestamp: now,
+        url: job.sender.tab.url,
+        pageTitle: job.sender.tab.title,
+        action: job.message.action || "คลิก",
+        elementTag: job.message.elementTag,
+        elementText: job.message.elementText,
+        description: job.message.description || `คลิกที่ ${job.message.elementText ? '"' + job.message.elementText + '"' : job.message.elementTag}`,
+        coords: job.message.coords,
+        viewport: job.message.viewport,
+        screenshot: screenshots[0],
+        screenshots,
+        captureMode
+      };
+
+      currentSession.push(step);
+      chrome.storage.local.set({ currentSession }, () => {
+        updateBadge("recording", currentSession.length);
+        captureInProgress = false;
+        processCaptureQueue();
+      });
+    } catch (error) {
+      console.warn("GuideFlow capture failed:", error.message);
+      captureInProgress = false;
+      processCaptureQueue();
+    }
+  });
+}
+
+function sendTabMessage(tabId, message) {
+  return new Promise((resolve, reject) => {
+    chrome.tabs.sendMessage(tabId, message, (response) => {
+      if (chrome.runtime.lastError) {
+        reject(new Error(chrome.runtime.lastError.message));
+        return;
+      }
+      if (!response) {
+        reject(new Error("No response from content script"));
+        return;
+      }
+      resolve(response);
+    });
+  });
+}
+
+function ensureActiveTabContentScript(done) {
+  chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
+    const tab = tabs && tabs[0];
+    if (!tab || !tab.id) {
+      done();
+      return;
+    }
+
+    chrome.tabs.sendMessage(tab.id, { type: "GUIDEFLOW_PING" }, () => {
+      if (!chrome.runtime.lastError) {
+        done();
+        return;
+      }
+
+      chrome.scripting.executeScript({
+        target: { tabId: tab.id, allFrames: true },
+        files: ["content.js"]
+      }, () => {
+        if (chrome.runtime.lastError) {
+          console.warn("GuideFlow content script injection failed:", chrome.runtime.lastError.message);
+        }
+        done();
+      });
+    });
+  });
+}
+
+function captureVisibleTab(windowId) {
+  return new Promise((resolve, reject) => {
+    chrome.tabs.captureVisibleTab(windowId, { format: "png" }, (dataUrl) => {
+      if (chrome.runtime.lastError || !dataUrl) {
+        reject(new Error(chrome.runtime.lastError?.message || "Empty screenshot"));
+        return;
+      }
+      resolve(dataUrl);
+    });
+  });
+}
+
+function delay(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+async function captureStepImages(tab, mode) {
+  if (mode !== "fullpage") return [await captureVisibleTab(tab.windowId)];
+
+  const metrics = await sendTabMessage(tab.id, { type: "GET_PAGE_METRICS" });
+  const positions = calculateCapturePositions(metrics.scrollHeight, metrics.viewportHeight);
+  const screenshots = [];
+
+  try {
+    for (const scrollY of positions) {
+      await sendTabMessage(tab.id, { type: "SET_CAPTURE_SCROLL", scrollY });
+      await delay(120);
+      screenshots.push(await captureVisibleTab(tab.windowId));
+    }
+  } finally {
+    await sendTabMessage(tab.id, {
+      type: "RESTORE_CAPTURE_SCROLL",
+      scrollX: metrics.scrollX || 0,
+      scrollY: metrics.scrollY || 0
+    }).catch(() => {});
+  }
+
+  return screenshots.length ? screenshots : [await captureVisibleTab(tab.windowId)];
+}
 
 function updateBadge(status, count) {
   if (status === "recording") {

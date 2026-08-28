@@ -1,14 +1,17 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes">
   <title>GuideFlow — Interactive Guide</title>
-  
+
   <!-- Google Fonts: Mali & Noto Sans Thai Looped -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Mali:wght@500;600;700&family=Noto+Sans+Thai+Looped:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Mali:wght@500;600;700&family=Noto+Sans+Thai+Looped:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
 
   <style>
     :root {
@@ -27,12 +30,19 @@
       --border: #E2E8F0;
       --border-dark: #CBD5E1;
       --text-muted: #64748B;
+      --hacker-green: #39FF14;
+      --hacker-green-soft: rgba(57, 255, 20, 0.24);
+      --hacker-green-glow: rgba(57, 255, 20, 0.72);
       --shadow-sm: 0 4px 12px rgba(38, 57, 74, 0.06);
       --shadow-md: 0 12px 32px rgba(38, 57, 74, 0.10);
       --shadow-lg: 0 24px 60px rgba(38, 57, 74, 0.14);
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     body {
       font-family: 'Noto Sans Thai Looped', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -106,6 +116,7 @@
       letter-spacing: -0.01em;
       cursor: pointer;
     }
+
     .guide-title:hover {
       color: var(--coral);
     }
@@ -192,6 +203,7 @@
       border-color: var(--mint);
       color: #FFF;
     }
+
     .btn-mint:hover {
       background: var(--mint-dark);
       border-color: var(--mint-dark);
@@ -216,9 +228,10 @@
       display: none;
       align-items: center;
       gap: 6px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
       transition: opacity 0.2s, transform 0.2s;
     }
+
     #zenToggleFloat:hover {
       background: var(--ink);
       transform: scale(1.04);
@@ -285,6 +298,7 @@
       padding: 2px 6px;
       transition: background 0.2s;
     }
+
     .step-text-title:focus {
       background: rgba(232, 135, 122, 0.1);
       box-shadow: 0 0 0 2px var(--coral);
@@ -309,6 +323,7 @@
       cursor: pointer;
       transition: all 0.2s;
     }
+
     .icon-btn:hover {
       background: rgba(38, 57, 74, 0.08);
       color: var(--ink);
@@ -368,7 +383,7 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
       z-index: 20;
     }
 
@@ -387,6 +402,7 @@
       font-weight: 700;
       transition: background 0.15s;
     }
+
     .zoom-btn:hover {
       background: rgba(38, 57, 74, 0.1);
     }
@@ -415,6 +431,7 @@
       font-family: 'Mali', cursive;
       transition: opacity 0.2s;
     }
+
     .btn-focus-spotlight:hover {
       opacity: 0.9;
     }
@@ -427,13 +444,14 @@
       z-index: 10;
     }
 
+
     .ring-pulse {
       width: 50px;
       height: 50px;
-      border: 3.5px solid var(--coral);
+      border: 3.5px solid var(--hacker-green);
       border-radius: 50%;
-      background: rgba(232, 135, 122, 0.25);
-      box-shadow: 0 0 25px rgba(232, 135, 122, 0.6), inset 0 0 15px rgba(232, 135, 122, 0.4);
+      background: var(--hacker-green-soft);
+      box-shadow: 0 0 25px var(--hacker-green-glow), inset 0 0 15px rgba(57, 255, 20, 0.42);
       animation: pulse-ring 1.8s cubic-bezier(0.45, 0, 0.55, 1) infinite;
     }
 
@@ -444,26 +462,37 @@
       width: 12px;
       height: 12px;
       background: #FFF;
-      border: 2.5px solid var(--coral);
+      border: 2.5px solid var(--hacker-green);
       border-radius: 50%;
       transform: translate(-50%, -50%);
-      box-shadow: 0 2px 6px rgba(38, 57, 74, 0.3);
+      box-shadow: 0 0 12px var(--hacker-green-glow);
     }
 
     @keyframes pulse-ring {
-      0% { transform: scale(0.9); opacity: 0.95; }
-      50% { transform: scale(1.35); opacity: 0.35; }
-      100% { transform: scale(0.9); opacity: 0.95; }
+      0% {
+        transform: scale(0.9);
+        opacity: 0.95;
+      }
+
+      50% {
+        transform: scale(1.35);
+        opacity: 0.35;
+      }
+
+      100% {
+        transform: scale(0.9);
+        opacity: 0.95;
+      }
     }
 
     /* Target Box highlight */
     .target-box {
       position: absolute;
-      border: 2.5px dashed var(--coral);
-      background: rgba(232, 135, 122, 0.12);
+      border: 2.5px dashed var(--hacker-green);
+      background: rgba(57, 255, 20, 0.10);
       border-radius: 8px;
       pointer-events: none;
-      box-shadow: 0 4px 16px rgba(232, 135, 122, 0.25);
+      box-shadow: 0 0 18px rgba(57, 255, 20, 0.30);
     }
 
     /* Step Custom Note / Tip Callout */
@@ -477,7 +506,11 @@
       font-size: 13px;
       color: var(--ink);
     }
-    .slide-note-box.hidden { display: none; }
+
+    .slide-note-box.hidden {
+      display: none;
+    }
+
     .note-badge {
       background: rgba(210, 165, 75, 0.2);
       color: #946914;
@@ -489,15 +522,18 @@
       font-family: 'Mali', cursive;
       flex-shrink: 0;
     }
+
     .note-text {
       flex: 1;
       outline: none;
       padding: 2px 4px;
     }
+
     .note-text:focus {
       background: rgba(210, 165, 75, 0.1);
       border-radius: 4px;
     }
+
     .note-text:empty::before {
       content: attr(placeholder);
       color: var(--text-muted);
@@ -609,10 +645,12 @@
       pointer-events: none;
       transition: opacity 0.2s ease;
     }
+
     .modal-overlay.open {
       opacity: 1;
       pointer-events: auto;
     }
+
     .modal-card {
       background: #FFF;
       border-radius: 16px;
@@ -621,6 +659,7 @@
       width: 100%;
       box-shadow: var(--shadow-lg);
     }
+
     .modal-title {
       font-family: 'Mali', cursive;
       font-size: 18px;
@@ -628,6 +667,7 @@
       color: var(--ink);
       margin-bottom: 12px;
     }
+
     .modal-body input {
       width: 100%;
       padding: 10px 14px;
@@ -637,6 +677,7 @@
       outline: none;
       margin-bottom: 16px;
     }
+
     .modal-actions {
       display: flex;
       justify-content: flex-end;
@@ -669,10 +710,12 @@
       header {
         padding: 10px 14px;
       }
+
       .brand-badge {
         font-size: 11px;
         padding: 3px 8px;
       }
+
       .guide-title {
         font-size: 15px;
         max-width: 140px;
@@ -680,39 +723,49 @@
         overflow: hidden;
         text-overflow: ellipsis;
       }
+
       .top-actions {
         gap: 6px;
       }
+
       .btn {
         padding: 5px 10px;
         font-size: 11px;
       }
+
       #slidesContainer {
         padding: 8px;
       }
+
       .slide-card {
         border-radius: 14px;
       }
+
       .slide-header {
         padding: 10px 14px;
       }
+
       .step-text-title {
         font-size: 15px;
       }
+
       .stage-wrapper {
         height: 52vh;
         min-height: 280px;
       }
+
       .slides-controls {
         padding: 10px 14px;
         flex-wrap: wrap;
       }
+
       .timeline-bar {
         order: -1;
         width: 100%;
         max-width: 100%;
         margin: 0 0 10px 0;
       }
+
       .btn-nav-label {
         display: none;
       }
@@ -724,31 +777,61 @@
         background: #FFF !important;
         color: #000 !important;
       }
-      body::before, header, .slides-controls, .floating-zoom-bar, #zenToggleFloat {
+
+      body::before,
+      header,
+      .slides-controls,
+      .floating-zoom-bar,
+      #zenToggleFloat {
         display: none !important;
       }
-      #slidesContainer { display: none !important; }
+
+      #slidesContainer {
+        display: none !important;
+      }
+
       #docContainer {
         display: block !important;
         max-width: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
       }
+
       .doc-step-card {
         box-shadow: none !important;
         border: 1px solid #CCC !important;
         page-break-inside: avoid;
         margin-bottom: 20px !important;
       }
+
+      .spotlight-ring {
+        opacity: 1 !important;
+      }
+
+      .spotlight-ring .ring-pulse {
+        border-color: rgba(57, 255, 20, 1) !important;
+        background: rgba(57, 255, 20, 0.30) !important;
+        box-shadow: none !important;
+        animation: none !important;
+      }
+
+      .target-box {
+        opacity: 1 !important;
+        border-color: rgba(57, 255, 20, 1) !important;
+        background: rgba(57, 255, 20, 0.30) !important;
+        box-shadow: none !important;
+      }
     }
   </style>
 </head>
+
 <body>
 
   <!-- Floating Button to Exit Zen/Presentation Mode -->
   <button id="zenToggleFloat" title="คลิกเพื่อแสดงแถบเมนู (หรือกด Z)">
     <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-      <path fill-rule="evenodd" d="M1 8a7 7 0 1 0 14 0A7 7 0 0 0 1 8zm15 0A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8.5 4.5a.5.5 0 0 0-1 0v5.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V4.5z"/>
+      <path fill-rule="evenodd"
+        d="M1 8a7 7 0 1 0 14 0A7 7 0 0 0 1 8zm15 0A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8.5 4.5a.5.5 0 0 0-1 0v5.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V4.5z" />
     </svg>
     แสดงเมนู (Show Menu)
   </button>
@@ -763,13 +846,15 @@
       <div class="view-toggle">
         <button class="view-btn active" id="btnViewSlides">
           <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-            <path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm2-1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H2z"/>
+            <path
+              d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm2-1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H2z" />
           </svg>
           Slides
         </button>
         <button class="view-btn" id="btnViewDoc">
           <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-            <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/>
+            <path
+              d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z" />
           </svg>
           Doc
         </button>
@@ -777,31 +862,37 @@
 
       <button class="btn" id="btnZenMode" title="ซ่อนเมนูเพื่อนำเสนอแบบเต็มจอ (คีย์ลัด Z)">
         <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1h-4zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5zM.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5zm15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5z"/>
+          <path
+            d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1h-4zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5zM.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5zm15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5z" />
         </svg>
         Zen Mode
       </button>
 
       <button class="btn" id="btnPrint" title="พิมพ์เป็นคู่มือเอกสาร A4 หรือบันทึกเป็น PDF">
         <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/>
-          <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2H5zM4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2H4V3zm1 5a2 2 0 0 0-2 2v1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v-1a2 2 0 0 0-2-2H5zm7 2v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1z"/>
+          <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z" />
+          <path
+            d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2H5zM4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2H4V3zm1 5a2 2 0 0 0-2 2v1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v-1a2 2 0 0 0-2-2H5zm7 2v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1z" />
         </svg>
         พิมพ์/PDF
       </button>
 
       <button class="btn" id="btnImport">
         <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
-          <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
+          <path
+            d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z" />
+          <path
+            d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z" />
         </svg>
         นำเข้า
       </button>
 
       <button class="btn btn-primary" id="btnExportHtml">
         <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
-          <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+          <path
+            d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z" />
+          <path
+            d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z" />
         </svg>
         Export HTML
       </button>
@@ -813,12 +904,13 @@
   <!-- SLIDES MODE -->
   <main id="slidesContainer">
     <div class="slide-card" id="slideCard">
-      
+
       <!-- Slide Header -->
       <div class="slide-header">
         <span class="step-badge" id="slideStepBadge">Step 1 of 5</span>
-        <div class="step-text-title" id="slideStepTitle" contenteditable="true" title="คลิกเพื่อแก้ไขคำอธิบายขั้นตอน">กำลังโหลดขั้นตอน...</div>
-        
+        <div class="step-text-title" id="slideStepTitle" contenteditable="true" title="คลิกเพื่อแก้ไขคำอธิบายขั้นตอน">
+          กำลังโหลดขั้นตอน...</div>
+
         <div class="header-step-tools">
           <button class="icon-btn" id="btnToggleTip" title="เพิ่มข้อเสนอแนะ/คำเตือน (Tip)">
             💡
@@ -838,6 +930,7 @@
             <div class="ring-center-dot"></div>
           </div>
           <div class="target-box" id="targetBox" style="display: none;"></div>
+
         </div>
 
         <!-- Floating Zoom Controls -->
@@ -848,8 +941,8 @@
           <button class="zoom-btn" id="btnZoomReset" title="รีเซ็ตขนาดภาพ (R หรือ 0)">↺</button>
           <button class="btn-focus-spotlight" id="btnFocusSpotlight" title="โฟกัสไปที่จุดคลิก (F)">
             <svg width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
-              <circle cx="8" cy="8" r="3"/>
-              <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8z"/>
+              <circle cx="8" cy="8" r="3" />
+              <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8z" />
             </svg>
             Focus
           </button>
@@ -859,14 +952,16 @@
       <!-- Optional Tip / Callout Box -->
       <div class="slide-note-box hidden" id="slideNoteBox">
         <span class="note-badge">💡 ข้อแนะนำ</span>
-        <div class="note-text" id="slideNoteText" contenteditable="true" placeholder="พิมพ์ข้อแนะนำหรือคำเตือนสำหรับขั้นตอนนี้..."></div>
+        <div class="note-text" id="slideNoteText" contenteditable="true"
+          placeholder="พิมพ์ข้อแนะนำหรือคำเตือนสำหรับขั้นตอนนี้..."></div>
       </div>
 
       <!-- Slide Navigation Controls -->
       <div class="slides-controls">
         <button class="btn" id="btnPrev">
           <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-            <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
+            <path fill-rule="evenodd"
+              d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z" />
           </svg>
           <span class="btn-nav-label">ย้อนกลับ (Prev)</span>
         </button>
@@ -876,7 +971,8 @@
         <button class="btn btn-mint" id="btnNext">
           <span class="btn-nav-label">ถัดไป (Next)</span>
           <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-            <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+            <path fill-rule="evenodd"
+              d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z" />
           </svg>
         </button>
       </div>
@@ -902,4 +998,5 @@
 
   <script src="viewer.js"></script>
 </body>
+
 </html>

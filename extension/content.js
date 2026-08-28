@@ -51,35 +51,91 @@ function resolveElementInfo(target) {
 window.addEventListener("click", (e) => {
   if (e.target && e.target.closest("#local-scribe-indicator")) return;
 
-  chrome.storage.local.get(["status"], (res) => {
-    if (res.status !== "recording") return;
+  if (!isExtensionContextValid()) return;
 
-    const info = resolveElementInfo(e.target);
-    const rect = info.element.getBoundingClientRect();
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
+  try {
+    chrome.storage.local.get(["status"], (res) => {
+      if (!isExtensionContextValid() || res.status !== "recording") return;
 
-    showFeedback(e.clientX, e.clientY);
+      const info = resolveElementInfo(e.target);
+      const rect = info.element.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
 
-    chrome.runtime.sendMessage({
-      type: "RECORD_CLICK",
-      elementTag: info.tagName,
-      elementText: info.text,
-      description: info.actionDesc,
-      coords: {
-        xPercent: Number(((e.clientX / vw) * 100).toFixed(2)),
-        yPercent: Number(((e.clientY / vh) * 100).toFixed(2)),
-        box: {
-          top: Number(((rect.top / vh) * 100).toFixed(2)),
-          left: Number(((rect.left / vw) * 100).toFixed(2)),
-          width: Number(((rect.width / vw) * 100).toFixed(2)),
-          height: Number(((rect.height / vh) * 100).toFixed(2))
+      showFeedback(e.clientX, e.clientY);
+
+      try {
+        chrome.runtime.sendMessage({
+          type: "RECORD_CLICK",
+          elementTag: info.tagName,
+          elementText: info.text,
+          description: info.actionDesc,
+          coords: {
+            xPercent: Number(((e.clientX / vw) * 100).toFixed(2)),
+            yPercent: Number(((e.clientY / vh) * 100).toFixed(2)),
+            box: {
+              top: Number(((rect.top / vh) * 100).toFixed(2)),
+              left: Number(((rect.left / vw) * 100).toFixed(2)),
+              width: Number(((rect.width / vw) * 100).toFixed(2)),
+              height: Number(((rect.height / vh) * 100).toFixed(2))
+            }
+          },
+          viewport: { width: vw, height: vh }
         }
-      },
-      viewport: { width: vw, height: vh }
+        );
+      } catch (_) {
+        // The extension may have been reloaded while this page stayed open.
+      }
     });
-  });
+  } catch (_) {
+    // Ignore invalidated extension contexts from stale content scripts.
+  }
 }, true);
+
+function isExtensionContextValid() {
+  try {
+    return typeof chrome !== "undefined" && Boolean(chrome.runtime && chrome.runtime.id);
+  } catch (_) {
+    return false;
+  }
+}
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === "GUIDEFLOW_PING") {
+    sendResponse({ ok: true });
+    return false;
+  }
+
+  if (message.type === "GET_PAGE_METRICS") {
+    if (window.top !== window) return false;
+    sendResponse({
+      scrollHeight: Math.max(document.documentElement.scrollHeight, document.body?.scrollHeight || 0),
+      viewportHeight: window.innerHeight,
+      viewportWidth: window.innerWidth,
+      scrollX: window.scrollX,
+      scrollY: window.scrollY
+    });
+    return false;
+  }
+
+  if (message.type === "SET_CAPTURE_SCROLL") {
+    if (window.top !== window) return false;
+    window.scrollTo({ left: 0, top: Number(message.scrollY) || 0, behavior: "auto" });
+    sendResponse({ ok: true });
+    return false;
+  }
+
+  if (message.type === "RESTORE_CAPTURE_SCROLL") {
+    if (window.top !== window) return false;
+    window.scrollTo({
+      left: Number(message.scrollX) || 0,
+      top: Number(message.scrollY) || 0,
+      behavior: "auto"
+    });
+    sendResponse({ ok: true });
+    return false;
+  }
+});
 
 function showFeedback(x, y) {
   const dot = document.createElement("div");

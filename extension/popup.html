@@ -134,6 +134,16 @@
       border-color: var(--mint);
     }
 
+    select {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      background: #FFF;
+      color: var(--ink);
+    }
+
     .btn-group {
       display: flex;
       flex-direction: column;
@@ -232,6 +242,14 @@
   <div class="form-group" id="titleGroup">
     <label for="guideTitle">ชื่อคู่มือ (Guide Title)</label>
     <input type="text" id="guideTitle" placeholder="เช่น วิธีเข้าสู่ระบบและสร้าง Prompt ใน Gemini" />
+  </div>
+
+  <div class="form-group" id="captureModeGroup">
+    <label for="captureMode">รูปแบบการจับภาพ</label>
+    <select id="captureMode">
+      <option value="viewport">เฉพาะส่วนที่มองเห็น</option>
+      <option value="fullpage">ทั้งหน้าเว็บ (เลื่อนเก็บอัตโนมัติ)</option>
+    </select>
   </div>
 
   <div class="status-card">
