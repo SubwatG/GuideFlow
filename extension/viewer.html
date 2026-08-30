@@ -27,6 +27,8 @@
       --sky: #70A7C7;
       --bg: #DCE2E7;
       --card-bg: #FFFFFF;
+      --header-bg: rgba(251, 250, 247, 0.94);
+      --stage-bg: #E2E8F0;
       --border: #E2E8F0;
       --border-dark: #CBD5E1;
       --text-muted: #64748B;
@@ -36,6 +38,29 @@
       --shadow-sm: 0 4px 12px rgba(38, 57, 74, 0.06);
       --shadow-md: 0 12px 32px rgba(38, 57, 74, 0.10);
       --shadow-lg: 0 24px 60px rgba(38, 57, 74, 0.14);
+    }
+
+    body.dark-theme {
+      --ink: #E2E8F0;
+      --ink-light: #94A3B8;
+      --cream: #1E293B;
+      --lavender: #9D91D8;
+      --mint: #5FA99E;
+      --mint-dark: #38B2AC;
+      --coral: #FF8A80;
+      --coral-hover: #FF7060;
+      --gold: #F6C860;
+      --sky: #88C0D0;
+      --bg: #0F172A;
+      --card-bg: #1E293B;
+      --header-bg: rgba(30, 41, 59, 0.94);
+      --stage-bg: #0B1120;
+      --border: #334155;
+      --border-dark: #475569;
+      --text-muted: #94A3B8;
+      --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.45);
+      --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.6);
     }
 
     * {
@@ -68,11 +93,17 @@
       z-index: 0;
     }
 
+    body.dark-theme::before {
+      background:
+        radial-gradient(circle at 15% 18%, rgba(157, 145, 216, 0.08), transparent 28%),
+        radial-gradient(circle at 84% 78%, rgba(95, 169, 158, 0.09), transparent 30%);
+    }
+
     /* HEADER BAR */
     header {
-      background: rgba(251, 250, 247, 0.94);
+      background: var(--header-bg);
       backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(38, 57, 74, 0.08);
+      border-bottom: 1px solid var(--border);
       padding: 12px 24px;
       display: flex;
       justify-content: space-between;
@@ -160,8 +191,8 @@
 
     .btn {
       background: var(--card-bg);
+      border: 1px solid var(--border);
       color: var(--ink);
-      border: 1px solid var(--border-dark);
       padding: 6px 14px;
       border-radius: 999px;
       font-size: 12px;
@@ -177,7 +208,7 @@
     }
 
     .btn:hover {
-      background: #F8FAFC;
+      background: var(--border);
       transform: translateY(-1px);
       box-shadow: var(--shadow-md);
     }
@@ -244,19 +275,30 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 16px;
-      max-width: 1200px;
+      padding: 12px 16px;
+      max-width: min(1680px, 96vw);
       margin: 0 auto;
       width: 100%;
+      height: calc(100dvh - 72px);
+      min-height: 0;
       position: relative;
       z-index: 1;
+      transition: max-width 0.3s ease, padding 0.3s ease;
+    }
+
+    body.zen-active #slidesContainer {
+      max-width: 98vw;
+      padding: 8px 12px;
+      height: 100dvh;
     }
 
     .slide-card {
       background: var(--cream);
-      border: 1px solid rgba(38, 57, 74, 0.08);
+      border: 1px solid var(--border);
       border-radius: 20px;
       width: 100%;
+      height: 100%;
+      min-height: 0;
       overflow: hidden;
       box-shadow: var(--shadow-lg);
       display: flex;
@@ -266,8 +308,8 @@
 
     .slide-header {
       padding: 14px 24px;
-      background: #FFFFFF;
-      border-bottom: 1px solid rgba(38, 57, 74, 0.06);
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -333,14 +375,14 @@
     .stage-wrapper {
       position: relative;
       width: 100%;
-      background: #E2E8F0;
+      flex: 1;
+      min-height: 240px;
+      height: 100%;
+      background: var(--stage-bg);
       display: flex;
       align-items: center;
       justify-content: center;
       overflow: hidden;
-      min-height: 400px;
-      height: 65vh;
-      max-height: 75vh;
       cursor: grab;
       user-select: none;
     }
@@ -353,7 +395,11 @@
       position: relative;
       transform-origin: 0 0;
       transition: transform 0.15s ease-out;
-      display: inline-block;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      max-width: 100%;
+      max-height: 100%;
       will-change: transform;
     }
 
@@ -364,6 +410,8 @@
     .stage-image {
       display: block;
       max-width: 100%;
+      max-height: 100%;
+      width: auto;
       height: auto;
       object-fit: contain;
       background: #FFF;
@@ -375,15 +423,15 @@
       position: absolute;
       bottom: 16px;
       right: 16px;
-      background: rgba(251, 250, 247, 0.9);
+      background: var(--header-bg);
       backdrop-filter: blur(8px);
-      border: 1px solid rgba(38, 57, 74, 0.12);
+      border: 1px solid var(--border);
       border-radius: 999px;
       padding: 4px 8px;
       display: flex;
       align-items: center;
       gap: 6px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+      box-shadow: var(--shadow-md);
       z-index: 20;
     }
 
@@ -429,11 +477,38 @@
       align-items: center;
       gap: 4px;
       font-family: 'Mali', cursive;
-      transition: opacity 0.2s;
+      transition: all 0.2s;
     }
 
     .btn-focus-spotlight:hover {
       opacity: 0.9;
+    }
+
+    .btn-auto-focus {
+      background: var(--card-bg);
+      color: var(--ink);
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-family: 'Mali', cursive;
+      transition: all 0.2s;
+    }
+
+    .btn-auto-focus:hover {
+      background: var(--border);
+    }
+
+    .btn-auto-focus.active {
+      background: var(--mint-dark);
+      border-color: var(--mint-dark);
+      color: #FFFFFF;
+      box-shadow: 0 0 10px rgba(70, 134, 125, 0.4);
     }
 
     /* Spotlight marker */
@@ -498,8 +573,8 @@
     /* Step Custom Note / Tip Callout */
     .slide-note-box {
       padding: 12px 24px;
-      background: #FFF;
-      border-top: 1px solid rgba(38, 57, 74, 0.06);
+      background: var(--card-bg);
+      border-top: 1px solid var(--border);
       display: flex;
       align-items: center;
       gap: 10px;
@@ -513,7 +588,7 @@
 
     .note-badge {
       background: rgba(210, 165, 75, 0.2);
-      color: #946914;
+      color: var(--gold);
       border: 1px solid rgba(210, 165, 75, 0.4);
       padding: 2px 8px;
       border-radius: 999px;
@@ -546,8 +621,8 @@
       justify-content: space-between;
       align-items: center;
       padding: 14px 24px;
-      background: #FFFFFF;
-      border-top: 1px solid rgba(38, 57, 74, 0.06);
+      background: var(--card-bg);
+      border-top: 1px solid var(--border);
       gap: 12px;
     }
 
@@ -562,14 +637,14 @@
     .timeline-dot {
       flex: 1;
       height: 8px;
-      background: rgba(38, 57, 74, 0.1);
+      background: rgba(148, 163, 184, 0.25);
       border-radius: 999px;
       cursor: pointer;
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .timeline-dot:hover {
-      background: rgba(38, 57, 74, 0.25);
+      background: rgba(148, 163, 184, 0.45);
     }
 
     .timeline-dot.active {
@@ -580,7 +655,7 @@
     /* DOCUMENT VIEW */
     #docContainer {
       display: none;
-      max-width: 960px;
+      max-width: min(1360px, 94vw);
       margin: 24px auto;
       padding: 0 16px 60px 16px;
       width: 100%;
@@ -590,7 +665,7 @@
 
     .doc-step-card {
       background: var(--cream);
-      border: 1px solid rgba(38, 57, 74, 0.08);
+      border: 1px solid var(--border);
       border-radius: 20px;
       overflow: hidden;
       margin-bottom: 28px;
@@ -608,8 +683,8 @@
       display: flex;
       align-items: center;
       gap: 14px;
-      background: #FFFFFF;
-      border-bottom: 1px solid rgba(38, 57, 74, 0.06);
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
     }
 
     .doc-step-title {
@@ -621,7 +696,7 @@
 
     .doc-step-image-wrap {
       position: relative;
-      background: #F1F5F9;
+      background: var(--stage-bg);
     }
 
     .doc-step-image-wrap img {
@@ -634,8 +709,8 @@
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(38, 57, 74, 0.6);
-      backdrop-filter: blur(4px);
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(6px);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -652,7 +727,8 @@
     }
 
     .modal-card {
-      background: #FFF;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
       border-radius: 16px;
       padding: 24px;
       max-width: 480px;
@@ -735,6 +811,8 @@
 
       #slidesContainer {
         padding: 8px;
+        height: calc(100dvh - 60px);
+        max-width: 100%;
       }
 
       .slide-card {
@@ -750,8 +828,7 @@
       }
 
       .stage-wrapper {
-        height: 52vh;
-        min-height: 280px;
+        min-height: 220px;
       }
 
       .slides-controls {
@@ -838,7 +915,7 @@
 
   <header id="mainHeader">
     <div class="brand">
-      <span class="brand-badge">SCRIBE</span>
+      <span class="brand-badge">GUIDEFLOW</span>
       <span class="guide-title" id="displayTitle" title="คลิกเพื่อแก้ไขชื่อคู่มือ">คู่มือการใช้งานระบบ</span>
     </div>
 
@@ -877,14 +954,34 @@
         พิมพ์/PDF
       </button>
 
-      <button class="btn" id="btnImport">
+      <button class="btn" id="btnImport" title="นำเข้าไฟล์ข้อมูลคู่มือ (.json) เพื่อเปิดดูหรือแก้ไข">
         <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
           <path
             d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z" />
           <path
             d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z" />
         </svg>
-        นำเข้า
+        นำเข้า JSON
+      </button>
+
+      <button class="btn" id="btnExportJson" title="ส่งออกไฟล์ข้อมูลคู่มือ (.json) เพื่อสำรองข้อมูลหรือแชร์">
+        <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
+          <path d="M4.5 9.5a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 0 1h-6a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5z"/>
+        </svg>
+        Export JSON
+      </button>
+
+      <button class="btn" id="btnExportImages" title="ส่งออกรูปภาพทุกขั้นตอนลงโฟลเดอร์ในเครื่อง">
+        <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M4.502 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/>
+          <path d="M14.002 13a2 2 0 0 1-2 2h-10a2 2 0 0 1-2-2V5A2 2 0 0 1 2 3a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-1.998 2zM14 2H4a1 1 0 0 0-1 1h9.002a2 2 0 0 1 2 2v7A1 1 0 0 0 15 11V3a1 1 0 0 0-1-1zM2.002 4a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-10zm10 8H3l2.5-3.5 1.5 2 2.5-3.5 2.5 5z"/>
+        </svg>
+        Export Images
+      </button>
+
+      <button class="btn" id="btnThemeToggle" title="สลับโหมดมืด/สว่าง (Dark / Light Theme)">
+        <span id="themeIcon">🌙</span>
       </button>
 
       <button class="btn btn-primary" id="btnExportHtml">
@@ -939,12 +1036,16 @@
           <span class="zoom-level-text" id="zoomLevelText">100%</span>
           <button class="zoom-btn" id="btnZoomIn" title="ขยายภาพ (+)">+</button>
           <button class="zoom-btn" id="btnZoomReset" title="รีเซ็ตขนาดภาพ (R หรือ 0)">↺</button>
-          <button class="btn-focus-spotlight" id="btnFocusSpotlight" title="โฟกัสไปที่จุดคลิก (F)">
+          <button class="btn-focus-spotlight" id="btnFocusSpotlight" title="โฟกัสไปที่จุดคลิกครั้งเดียว (F)">
             <svg width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
               <circle cx="8" cy="8" r="3" />
               <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8z" />
             </svg>
             Focus
+          </button>
+          <button class="btn-auto-focus" id="btnAutoFocus" title="เปิด/ปิด การซูมโฟกัสอัตโนมัติทุกสเต็ป (คีย์ลัด A)">
+            <span>🎯</span>
+            <span id="autoFocusLabel">Auto Focus</span>
           </button>
         </div>
       </div>
@@ -992,6 +1093,30 @@
       <div class="modal-actions">
         <button class="btn" id="btnCancelEditTitle">ยกเลิก</button>
         <button class="btn btn-primary" id="btnSaveEditTitle">บันทึก</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export Images Modal -->
+  <div class="modal-overlay" id="exportImagesModal">
+    <div class="modal-card">
+      <div class="modal-title">ส่งออกรูปภาพลงโฟลเดอร์ (Export Images)</div>
+      <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
+        <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">
+          ระบบจะบันทึกรูปภาพของทุกขั้นตอนลงในโฟลเดอร์บนเครื่องของคุณโดยตรง (เรียงชื่อไฟล์ step-01, step-02, ...)
+        </p>
+        <label style="display: flex; align-items: center; gap: 10px; font-size: 14px; cursor: pointer; user-select: none;">
+          <input type="checkbox" id="chkIncludeHighlight" checked style="width: 18px; height: 18px; accent-color: var(--mint); cursor: pointer;" />
+          <span>วาดวงแหวนเน้นจุดคลิก (Highlight) ลงบนรูปภาพ</span>
+        </label>
+        <label style="display: flex; align-items: center; gap: 10px; font-size: 14px; cursor: pointer; user-select: none;">
+          <input type="checkbox" id="chkIncludeReadme" checked style="width: 18px; height: 18px; accent-color: var(--mint); cursor: pointer;" />
+          <span>สร้างไฟล์สรุปเนื้อหาคู่มือ (README.md) ไว้ในโฟลเดอร์ด้วย</span>
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" id="btnCancelExportImages">ยกเลิก</button>
+        <button class="btn btn-primary" id="btnConfirmExportImages">เลือกโฟลเดอร์ & บันทึก</button>
       </div>
     </div>
   </div>

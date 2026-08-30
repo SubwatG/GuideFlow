@@ -13,6 +13,7 @@ let isPanning = false;
 let startPanX = 0;
 let startPanY = 0;
 let isZenMode = false;
+let isAutoFocusActive = false;
 
 function startApp() {
   // Elements
@@ -41,6 +42,8 @@ function startApp() {
   const btnZoomOut = document.getElementById("btnZoomOut");
   const btnZoomReset = document.getElementById("btnZoomReset");
   const btnFocusSpotlight = document.getElementById("btnFocusSpotlight");
+  const btnAutoFocus = document.getElementById("btnAutoFocus");
+  const autoFocusLabel = document.getElementById("autoFocusLabel");
   const zoomLevelText = document.getElementById("zoomLevelText");
 
   const slideNoteBox = document.getElementById("slideNoteBox");
@@ -52,8 +55,19 @@ function startApp() {
   const btnPrev = document.getElementById("btnPrev");
   const btnNext = document.getElementById("btnNext");
   const btnExportHtml = document.getElementById("btnExportHtml");
+  const btnExportJson = document.getElementById("btnExportJson");
+  const btnExportImages = document.getElementById("btnExportImages");
+  const btnThemeToggle = document.getElementById("btnThemeToggle");
+  const themeIcon = document.getElementById("themeIcon");
   const btnImport = document.getElementById("btnImport");
   const fileInput = document.getElementById("fileInput");
+
+  // Export Images modal
+  const exportImagesModal = document.getElementById("exportImagesModal");
+  const chkIncludeHighlight = document.getElementById("chkIncludeHighlight");
+  const chkIncludeReadme = document.getElementById("chkIncludeReadme");
+  const btnCancelExportImages = document.getElementById("btnCancelExportImages");
+  const btnConfirmExportImages = document.getElementById("btnConfirmExportImages");
 
   // Title modal
   const titleModal = document.getElementById("titleModal");
@@ -106,7 +120,9 @@ function startApp() {
 
       if (headerStepTools) headerStepTools.style.display = "none";
       if (btnImport) btnImport.style.display = "none";
+      if (btnExportJson) btnExportJson.style.display = "none";
       if (btnExportHtml) btnExportHtml.style.display = "none";
+      if (btnExportImages) btnExportImages.style.display = "none";
     } else {
       // In Studio Mode: Enable editing tools
       slideStepTitle.setAttribute("contenteditable", "true");
@@ -117,7 +133,9 @@ function startApp() {
 
       if (headerStepTools) headerStepTools.style.display = "flex";
       if (btnImport) btnImport.style.display = "inline-flex";
+      if (btnExportJson) btnExportJson.style.display = "inline-flex";
       if (btnExportHtml) btnExportHtml.style.display = "inline-flex";
+      if (btnExportImages) btnExportImages.style.display = "inline-flex";
     }
   }
 
@@ -164,18 +182,23 @@ function startApp() {
     slideStepTitle.textContent = step.description || `ขั้นตอนที่ ${index + 1}`;
     slideImg.src = step.screenshot;
 
-    // Reset zoom when switching step unless zoomed
-    resetZoomAndPan(false);
-
     // Spotlight coordinate
     if (step.coords && step.coords.xPercent !== undefined) {
       spotlightRing.style.display = "block";
       spotlightRing.style.left = `${step.coords.xPercent}%`;
       spotlightRing.style.top = `${step.coords.yPercent}%`;
-
     } else {
       spotlightRing.style.display = "none";
+    }
 
+    // Auto Focus logic if enabled
+    if (isAutoFocusActive && step.coords && step.coords.xPercent !== undefined) {
+      requestAnimationFrame(() => {
+        focusOnSpotlight(false);
+      });
+    } else {
+      // Reset zoom when switching step in normal mode
+      resetZoomAndPan(false);
     }
 
     // Target box
@@ -292,10 +315,10 @@ function startApp() {
     applyTransform(false);
   }
 
-  function focusOnSpotlight() {
+  function focusOnSpotlight(smooth = true) {
     const step = currentSession[currentStepIndex];
     if (!step || !step.coords || step.coords.xPercent === undefined) {
-      resetZoomAndPan(true);
+      resetZoomAndPan(smooth);
       return;
     }
 
@@ -311,14 +334,34 @@ function startApp() {
     panX = (stageW / 2) - (targetX * zoomScale);
     panY = (stageH / 2) - (targetY * zoomScale);
 
-    applyTransform(true);
+    applyTransform(smooth);
+  }
+
+  function toggleAutoFocus() {
+    isAutoFocusActive = !isAutoFocusActive;
+    if (isAutoFocusActive) {
+      btnAutoFocus.classList.add("active");
+      autoFocusLabel.textContent = "Auto Focus (ON)";
+      focusOnSpotlight(true);
+    } else {
+      btnAutoFocus.classList.remove("active");
+      autoFocusLabel.textContent = "Auto Focus";
+    }
   }
 
   // Zoom Button Events
   btnZoomIn.addEventListener("click", () => zoomAtCenter(0.25));
   btnZoomOut.addEventListener("click", () => zoomAtCenter(-0.25));
-  btnZoomReset.addEventListener("click", () => resetZoomAndPan(true));
-  btnFocusSpotlight.addEventListener("click", () => focusOnSpotlight());
+  btnZoomReset.addEventListener("click", () => {
+    if (isAutoFocusActive) {
+      isAutoFocusActive = false;
+      btnAutoFocus.classList.remove("active");
+      autoFocusLabel.textContent = "Auto Focus";
+    }
+    resetZoomAndPan(true);
+  });
+  btnFocusSpotlight.addEventListener("click", () => focusOnSpotlight(true));
+  btnAutoFocus.addEventListener("click", toggleAutoFocus);
 
   // Mouse Wheel Zoom
   stageWrapper.addEventListener("wheel", (e) => {
@@ -407,9 +450,11 @@ function startApp() {
   function toggleZenMode() {
     isZenMode = !isZenMode;
     if (isZenMode) {
+      document.body.classList.add("zen-active");
       mainHeader.classList.add("zen-hidden");
       zenToggleFloat.style.display = "inline-flex";
     } else {
+      document.body.classList.remove("zen-active");
       mainHeader.classList.remove("zen-hidden");
       zenToggleFloat.style.display = "none";
     }
@@ -523,11 +568,20 @@ function startApp() {
     // Don't trigger shortcuts if editing text
     if (e.target.isContentEditable || e.target.tagName === "INPUT") return;
 
-    if (e.key === "z" || e.key === "Z") {
+    if (e.key === "t" || e.key === "T") {
+      toggleTheme();
+    } else if (e.key === "z" || e.key === "Z") {
       toggleZenMode();
+    } else if (e.key === "a" || e.key === "A") {
+      toggleAutoFocus();
     } else if (e.key === "f" || e.key === "F") {
-      focusOnSpotlight();
+      focusOnSpotlight(true);
     } else if (e.key === "r" || e.key === "R" || e.key === "0") {
+      if (isAutoFocusActive) {
+        isAutoFocusActive = false;
+        btnAutoFocus.classList.remove("active");
+        autoFocusLabel.textContent = "Auto Focus";
+      }
       resetZoomAndPan(true);
     } else if (e.key === "+" || e.key === "=") {
       zoomAtCenter(0.25);
@@ -548,6 +602,23 @@ function startApp() {
     }
   });
 
+  // Dark / Light Theme Toggle
+  const savedTheme = localStorage.getItem("guideflow_theme");
+  if (savedTheme === "dark") {
+    document.body.classList.add("dark-theme");
+    if (themeIcon) themeIcon.textContent = "☀️";
+  }
+
+  function toggleTheme() {
+    const isDark = document.body.classList.toggle("dark-theme");
+    localStorage.setItem("guideflow_theme", isDark ? "dark" : "light");
+    if (themeIcon) themeIcon.textContent = isDark ? "☀️" : "🌙";
+  }
+
+  if (btnThemeToggle) {
+    btnThemeToggle.addEventListener("click", toggleTheme);
+  }
+
   // Toggle View modes
   btnViewSlides.addEventListener("click", () => {
     btnViewSlides.classList.add("active");
@@ -562,6 +633,205 @@ function startApp() {
     slidesContainer.style.display = "none";
     docContainer.style.display = "block";
   });
+
+  // Export Images to Local Folder
+  btnExportImages.addEventListener("click", () => {
+    if (!currentSession || currentSession.length === 0) {
+      alert("ไม่มีข้อมูลขั้นตอนที่จะส่งออกรูปภาพ");
+      return;
+    }
+    exportImagesModal.classList.add("open");
+  });
+
+  btnCancelExportImages.addEventListener("click", () => {
+    exportImagesModal.classList.remove("open");
+  });
+
+  exportImagesModal.addEventListener("click", (e) => {
+    if (e.target === exportImagesModal) {
+      exportImagesModal.classList.remove("open");
+    }
+  });
+
+  btnConfirmExportImages.addEventListener("click", async () => {
+    exportImagesModal.classList.remove("open");
+    const includeHighlight = chkIncludeHighlight.checked;
+    const includeReadme = chkIncludeReadme.checked;
+
+    try {
+      if (!window.showDirectoryPicker) {
+        // Fallback for browsers without File System Access API
+        await exportImagesFallback(includeHighlight, includeReadme);
+        return;
+      }
+
+      const dirHandle = await window.showDirectoryPicker({ mode: "readwrite" });
+      await exportImagesToDirectory(dirHandle, includeHighlight, includeReadme);
+      alert("ส่งออกรูปภาพลงโฟลเดอร์เรียบร้อยแล้ว!");
+    } catch (err) {
+      if (err.name !== "AbortError") {
+        console.error("Export images failed:", err);
+        alert(`เกิดข้อผิดพลาดในการส่งออก: ${err.message || err}`);
+      }
+    }
+  });
+
+  async function renderHighlightedImage(dataUrl, step) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth || img.width;
+        canvas.height = img.naturalHeight || img.height;
+        const ctx = canvas.getContext("2d");
+
+        // Draw original screenshot
+        ctx.drawImage(img, 0, 0);
+
+        if (step.coords && step.coords.xPercent !== undefined) {
+          const x = (step.coords.xPercent / 100) * canvas.width;
+          const y = (step.coords.yPercent / 100) * canvas.height;
+
+          // Draw target box if present
+          if (step.coords.box && step.coords.box.width > 0) {
+            const bx = (step.coords.box.left / 100) * canvas.width;
+            const by = (step.coords.box.top / 100) * canvas.height;
+            const bw = (step.coords.box.width / 100) * canvas.width;
+            const bh = (step.coords.box.height / 100) * canvas.height;
+
+            ctx.save();
+            ctx.strokeStyle = "#39FF14";
+            ctx.lineWidth = Math.max(3, canvas.width * 0.0025);
+            ctx.setLineDash([8, 6]);
+            ctx.fillStyle = "rgba(57, 255, 20, 0.12)";
+            ctx.fillRect(bx, by, bw, bh);
+            ctx.strokeRect(bx, by, bw, bh);
+            ctx.restore();
+          }
+
+          // Draw Hacker Green pulse ring
+          ctx.save();
+          const ringRadius = Math.max(22, canvas.width * 0.022);
+          ctx.beginPath();
+          ctx.arc(x, y, ringRadius, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(57, 255, 20, 0.25)";
+          ctx.fill();
+          ctx.strokeStyle = "#39FF14";
+          ctx.lineWidth = Math.max(3.5, canvas.width * 0.0035);
+          ctx.shadowColor = "rgba(57, 255, 20, 0.8)";
+          ctx.shadowBlur = 15;
+          ctx.stroke();
+
+          // Center dot
+          ctx.beginPath();
+          ctx.arc(x, y, Math.max(6, ringRadius * 0.26), 0, Math.PI * 2);
+          ctx.fillStyle = "#FFFFFF";
+          ctx.fill();
+          ctx.strokeStyle = "#39FF14";
+          ctx.lineWidth = 2.5;
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        canvas.toBlob((blob) => resolve(blob), "image/png");
+      };
+      img.onerror = () => {
+        // Fallback to dataURL blob if image load fails
+        fetch(dataUrl).then(res => res.blob()).then(resolve);
+      };
+      img.src = dataUrl;
+    });
+  }
+
+  async function dataUrlToBlob(dataUrl) {
+    const res = await fetch(dataUrl);
+    return await res.blob();
+  }
+
+  async function exportImagesToDirectory(dirHandle, includeHighlight, includeReadme) {
+    for (let i = 0; i < currentSession.length; i++) {
+      const step = currentSession[i];
+      const stepNum = String(i + 1).padStart(2, "0");
+      const safeDesc = (step.description || "action")
+        .replace(/[/\\?%*:|"<>]/g, "-")
+        .replace(/\s+/g, "_")
+        .substring(0, 30);
+
+      const screenshots = Array.isArray(step.screenshots) && step.screenshots.length
+        ? step.screenshots
+        : [step.screenshot];
+
+      for (let sIdx = 0; sIdx < screenshots.length; sIdx++) {
+        const shotUrl = screenshots[sIdx];
+        const partSuffix = screenshots.length > 1 ? `_part${sIdx + 1}` : "";
+        const fileName = `step-${stepNum}_${safeDesc}${partSuffix}.png`;
+
+        let blob;
+        if (includeHighlight && sIdx === 0) {
+          blob = await renderHighlightedImage(shotUrl, step);
+        } else {
+          blob = await dataUrlToBlob(shotUrl);
+        }
+
+        const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
+        const writable = await fileHandle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+      }
+    }
+
+    if (includeReadme) {
+      let mdContent = `# ${sessionMeta.title || "คู่มือการใช้งานระบบ"}\n\n`;
+      mdContent += `สร้างเมื่อ: ${new Date(sessionMeta.startTime || Date.now()).toLocaleString("th-TH")}\n\n`;
+      mdContent += `## ขั้นตอนการดำเนินงาน\n\n`;
+
+      currentSession.forEach((step, idx) => {
+        const stepNum = String(idx + 1).padStart(2, "0");
+        mdContent += `### ขั้นตอนที่ ${idx + 1}: ${step.description || "คลิกบนหน้าจอ"}\n`;
+        if (step.url) mdContent += `- **URL:** ${step.url}\n`;
+        if (step.tipText) mdContent += `- **ข้อแนะนำ:** 💡 ${step.tipText}\n`;
+        mdContent += `\n`;
+      });
+
+      const readmeHandle = await dirHandle.getFileHandle("README.md", { create: true });
+      const writable = await readmeHandle.createWritable();
+      await writable.write(new Blob([mdContent], { type: "text/markdown;charset=utf-8" }));
+      await writable.close();
+    }
+  }
+
+  async function exportImagesFallback(includeHighlight, includeReadme) {
+    for (let i = 0; i < currentSession.length; i++) {
+      const step = currentSession[i];
+      const stepNum = String(i + 1).padStart(2, "0");
+      const safeDesc = (step.description || "action")
+        .replace(/[/\\?%*:|"<>]/g, "-")
+        .replace(/\s+/g, "_")
+        .substring(0, 30);
+
+      const screenshots = Array.isArray(step.screenshots) && step.screenshots.length
+        ? step.screenshots
+        : [step.screenshot];
+
+      for (let sIdx = 0; sIdx < screenshots.length; sIdx++) {
+        const partSuffix = screenshots.length > 1 ? `_part${sIdx + 1}` : "";
+        const fileName = `step-${stepNum}_${safeDesc}${partSuffix}.png`;
+        let blob = includeHighlight && sIdx === 0
+          ? await renderHighlightedImage(screenshots[sIdx], step)
+          : await dataUrlToBlob(screenshots[sIdx]);
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        await new Promise(r => setTimeout(r, 150));
+      }
+    }
+  }
 
   // Export standalone HTML
   btnExportHtml.addEventListener("click", () => {
@@ -645,6 +915,29 @@ function startApp() {
           URL.revokeObjectURL(url);
         });
     }
+  });
+
+  // Export JSON Backup
+  btnExportJson.addEventListener("click", () => {
+    if (!currentSession || currentSession.length === 0) {
+      alert("ไม่มีข้อมูลขั้นตอนที่จะส่งออก");
+      return;
+    }
+    const bundleData = {
+      meta: sessionMeta,
+      session: currentSession
+    };
+    const jsonStr = JSON.stringify(bundleData, null, 2);
+    const blob = new Blob([jsonStr], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const filename = (sessionMeta.title || "guide-backup").replace(/[/\\?%*:|"<>]/g, "-") + ".json";
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   });
 
   // Import JSON

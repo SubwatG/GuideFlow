@@ -2,6 +2,12 @@
 
 A local, client-side browser extension for capturing step-by-step web workflows and generating interactive HTML documentation.
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Interactive%20Preview-brightgreen?style=for-the-badge&logo=googlechrome)](https://subwatg.github.io/GuideFlow/)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue?style=for-the-badge)](https://github.com/SubwatG/GuideFlow/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
+
+> 🚀 **[Try Live Interactive Demo / ทดลองเล่นคู่มือตัวอย่างจริง](https://subwatg.github.io/GuideFlow/)**
+
 ---
 
 ## Language / ภาษา
@@ -81,13 +87,21 @@ GuideFlow is an open-source, client-side Chromium extension that automates the c
 ### 5. Usage Instructions
 1. Navigate to the target web application you wish to document.
 2. Click the **GuideFlow** extension icon in your browser toolbar.
-3. Click **Start Recording**.
-4. Perform the steps sequentially on the web page.
-5. Return to the extension popup and click **Stop & Review**.
-6. In the Interactive Studio tab:
-   - Edit step titles and descriptions.
-   - Add tips or delete redundant steps.
-   - Click **Export HTML** to save a self-contained guide file.
+3. Choose **Capture Mode**:
+   - *Viewport (Default):* Captures only visible area.
+   - *Full Page:* Automatically scrolls and stitches the entire web page.
+4. Click **Start Recording**.
+5. Perform the steps sequentially on the web page.
+6. Return to the extension popup and click **Stop & Review**.
+7. In the Interactive Studio tab:
+   - **Edit:** Click step titles, descriptions, or add helpful **Tips (💡)**.
+   - **Zoom & Focus:** Use mouse wheel, pan, press **F** for one-time focus, or press **A** to toggle **Auto Focus (🎯)** mode across all steps.
+   - **Zen Mode (Z):** Hide navigation bars for distraction-free presentation.
+   - **Dark Mode (T):** Toggle between Light and Dark themes anytime.
+   - **Export HTML:** Save as a single, self-contained interactive web page.
+   - **Export Images:** Save all screenshot steps directly into a local folder (with optional click-highlight overlay and `README.md` summary).
+   - **Export / Import JSON:** Backup your full guide dataset to `.json` or load an existing `.json` file back into the editor anytime.
+   - **Print / PDF:** Generate an A4 print-ready document or save directly as PDF.
 
 ---
 
@@ -179,12 +193,24 @@ GuideFlow คือส่วนขยายสำหรับเว็บเบ�
 
 ### 5. วิธีการใช้งาน
 1. เปิดหน้าเว็บไซต์หรือระบบที่ต้องการจัดทำคู่มือ
-2. คลิกไอคอนส่วนขยาย **GuideFlow** บนแถบเครื่องมือ
-3. คลิกปุ่ม **เริ่มบันทึก (Start Recording)**
-4. ดำเนินการคลิกและใช้งานระบบตามลำดับขั้นตอนปกติ
-5. เมื่อเสร็จสิ้น ให้คลิกไอคอนส่วนขยายอีกครั้งและเลือก **หยุดและตรวจสอบ (Stop & Review)**
-6. ระบบจะเปิดหน้าแก้ไขคู่มือ ผู้ใช้สามารถปรับแก้ข้อความ จัดลำดับ หรือลบขั้นตอนที่ไม่จำเป็นออก
-7. คลิก **ส่งออก HTML (Export HTML)** เพื่อบันทึกคู่มือเป็นไฟล์เดี่ยวสำหรับนำไปเผยแพร่
+2. คลิกไอคอนส่วนขยาย **GuideFlow** บนแถบเครื่องมือเบราว์เซอร์
+3. เลือก **รูปแบบการจับภาพ (Capture Mode)**:
+   - *เฉพาะส่วนที่มองเห็น (Viewport):* จับภาพเฉพาะหน้าต่างที่มองเห็นในขณะนั้น (ค่าเริ่มต้น)
+   - *ทั้งหน้าเว็บ (Full Page):* เลื่อนเก็บภาพทั้งหน้าเว็บตั้งแต่บนสุดถึงล่างสุดอัตโนมัติ
+4. คลิกปุ่ม **เริ่มบันทึก (Start Recording)**
+5. ดำเนินการคลิกและใช้งานระบบตามขั้นตอนจริง
+6. เมื่อเสร็จสิ้น ให้คลิกไอคอนส่วนขยายอีกครั้งและเลือก **หยุดและตรวจสอบ (Stop & Review)**
+7. ในหน้าจอ Interactive Studio คุณสามารถ:
+   - **แก้ไขเนื้อหา:** คลิกที่ข้อความชื่อขั้นตอนหรือคำอธิบายเพื่อพิมพ์แก้ได้ทันที พร้อมปุ่มเพิ่ม **ข้อเสนอแนะ (💡 Tip)**
+   - **ซูมและเลื่อนภาพ:** หมุน Mouse Wheel เพื่อซูม, กด **F (Focus)** เพื่อขยายโฟกัสครั้งเดียว, หรือกดปุ่ม **A (Auto Focus 🎯)** เพื่อเปิดโหมดล็อกการซูมโฟกัสอัตโนมัติในทุกสเต็ปที่เปลี่ยนไป
+   - **Zen Mode:** กดปุ่ม **Z** เพื่อซ่อนแถบเครื่องมือและนำเสนอคู่มือแบบเต็มจอ
+   - **โหมดมืด (Dark Mode):** กดปุ่ม **T** หรือคลิกไอคอนดวงจันทร์ 🌙 เพื่อสลับธีมมืด/สว่าง สบายตา
+   - **ส่งออกเป็น HTML (Export HTML):** เซฟเป็นไฟล์ `.html` หน้าเดี่ยว เปิดใช้งานได้ทุกอุปกรณ์โดยไม่ต้องมีอินเทอร์เน็ต
+   - **ส่งออกรูปภาพลงโฟลเดอร์ (Export Images):** บันทึกไฟล์รูป `.png` ของทุกขั้นตอนลงโฟลเดอร์ในเครื่อง พร้อมตัวเลือกว่าจะฝังวงแหวนเน้นจุดคลิก (Highlight) หรือไม่ และสร้างไฟล์สรุป `README.md`
+   - **สำรองและนำเข้าข้อมูล (Export / Import JSON):** 
+     - กดปุ่ม **Export JSON** เพื่อดาวน์โหลดไฟล์ชุดข้อมูลคู่มือทั้งหมดเก็บไว้
+     - กดปุ่ม **นำเข้า JSON** เพื่อโหลดไฟล์ `.json` เดิมกลับขึ้นมาเปิดดูหรือแก้ไขเพิ่มเติมได้ตลอดเวลา
+   - **พิมพ์ / บันทึกเป็น PDF (Print):** กดปุ่ม **พิมพ์/PDF** เพื่อจัดหน้าสำหรับพิมพ์เอกสาร A4 หรือ Export เป็นไฟล์ PDF สวยงาม
 
 ---
 

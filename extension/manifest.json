@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "GuideFlow - Local Step Recorder",
-  "version": "1.0.7",
+  "version": "1.1.0",
   "description": "Capture screen and highlight click coordinates locally to generate step-by-step interactive documentation.",
   "permissions": [
     "activeTab",
