@@ -484,6 +484,31 @@
       opacity: 0.9;
     }
 
+    .btn-toggle-spotlight {
+      background: var(--card-bg);
+      color: var(--ink);
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-family: 'Mali', cursive;
+      transition: all 0.2s;
+    }
+
+    .btn-toggle-spotlight:hover {
+      background: var(--border);
+    }
+
+    .btn-toggle-spotlight.off {
+      opacity: 0.6;
+      border-style: dashed;
+    }
+
     .btn-auto-focus {
       background: var(--card-bg);
       color: var(--ink);
@@ -1042,6 +1067,10 @@
               <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8z" />
             </svg>
             Focus
+          </button>
+          <button class="btn-toggle-spotlight" id="btnToggleSpotlight" title="แสดง/ซ่อน วงแหวนโฟกัส Spotlight (คีย์ลัด H)">
+            <span id="toggleSpotlightIcon">👁️</span>
+            <span id="toggleSpotlightLabel">Show Focus</span>
           </button>
           <button class="btn-auto-focus" id="btnAutoFocus" title="เปิด/ปิด การซูมโฟกัสอัตโนมัติทุกสเต็ป (คีย์ลัด A)">
             <span>🎯</span>

@@ -14,6 +14,7 @@ let startPanX = 0;
 let startPanY = 0;
 let isZenMode = false;
 let isAutoFocusActive = false;
+let isSpotlightVisible = true;
 
 function startApp() {
   // Elements
@@ -42,6 +43,9 @@ function startApp() {
   const btnZoomOut = document.getElementById("btnZoomOut");
   const btnZoomReset = document.getElementById("btnZoomReset");
   const btnFocusSpotlight = document.getElementById("btnFocusSpotlight");
+  const btnToggleSpotlight = document.getElementById("btnToggleSpotlight");
+  const toggleSpotlightIcon = document.getElementById("toggleSpotlightIcon");
+  const toggleSpotlightLabel = document.getElementById("toggleSpotlightLabel");
   const btnAutoFocus = document.getElementById("btnAutoFocus");
   const autoFocusLabel = document.getElementById("autoFocusLabel");
   const zoomLevelText = document.getElementById("zoomLevelText");
@@ -183,7 +187,7 @@ function startApp() {
     slideImg.src = step.screenshot;
 
     // Spotlight coordinate
-    if (step.coords && step.coords.xPercent !== undefined) {
+    if (isSpotlightVisible && step.coords && step.coords.xPercent !== undefined) {
       spotlightRing.style.display = "block";
       spotlightRing.style.left = `${step.coords.xPercent}%`;
       spotlightRing.style.top = `${step.coords.yPercent}%`;
@@ -202,7 +206,7 @@ function startApp() {
     }
 
     // Target box
-    if (step.coords && step.coords.box && step.coords.box.width > 0) {
+    if (isSpotlightVisible && step.coords && step.coords.box && step.coords.box.width > 0) {
       targetBox.style.display = "block";
       targetBox.style.left = `${step.coords.box.left}%`;
       targetBox.style.top = `${step.coords.box.top}%`;
@@ -237,13 +241,12 @@ function startApp() {
       card.className = "doc-step-card";
 
       let ringHtml = "";
-      if (step.coords && step.coords.xPercent !== undefined) {
+      if (isSpotlightVisible && step.coords && step.coords.xPercent !== undefined) {
         ringHtml = `
           <div class="spotlight-ring" style="left: ${step.coords.xPercent}%; top: ${step.coords.yPercent}%;">
             <div class="ring-pulse"></div>
             <div class="ring-center-dot"></div>
           </div>
-
         `;
       }
 
@@ -349,6 +352,27 @@ function startApp() {
     }
   }
 
+  function toggleSpotlightVisibility() {
+    isSpotlightVisible = !isSpotlightVisible;
+    if (isSpotlightVisible) {
+      if (btnToggleSpotlight) {
+        btnToggleSpotlight.classList.remove("off");
+        if (toggleSpotlightIcon) toggleSpotlightIcon.textContent = "👁️";
+        if (toggleSpotlightLabel) toggleSpotlightLabel.textContent = "Show Focus";
+      }
+    } else {
+      if (btnToggleSpotlight) {
+        btnToggleSpotlight.classList.add("off");
+        if (toggleSpotlightIcon) toggleSpotlightIcon.textContent = "👁️‍🗨️";
+        if (toggleSpotlightLabel) toggleSpotlightLabel.textContent = "Hide Focus";
+      }
+    }
+    renderSlide(currentStepIndex);
+    if (docContainer && docContainer.style.display !== "none") {
+      renderDocView();
+    }
+  }
+
   // Zoom Button Events
   btnZoomIn.addEventListener("click", () => zoomAtCenter(0.25));
   btnZoomOut.addEventListener("click", () => zoomAtCenter(-0.25));
@@ -361,6 +385,9 @@ function startApp() {
     resetZoomAndPan(true);
   });
   btnFocusSpotlight.addEventListener("click", () => focusOnSpotlight(true));
+  if (btnToggleSpotlight) {
+    btnToggleSpotlight.addEventListener("click", toggleSpotlightVisibility);
+  }
   btnAutoFocus.addEventListener("click", toggleAutoFocus);
 
   // Mouse Wheel Zoom
@@ -572,6 +599,8 @@ function startApp() {
       toggleTheme();
     } else if (e.key === "z" || e.key === "Z") {
       toggleZenMode();
+    } else if (e.key === "h" || e.key === "H") {
+      toggleSpotlightVisibility();
     } else if (e.key === "a" || e.key === "A") {
       toggleAutoFocus();
     } else if (e.key === "f" || e.key === "F") {

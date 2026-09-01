@@ -95,7 +95,7 @@ GuideFlow is an open-source, client-side Chromium extension that automates the c
 6. Return to the extension popup and click **Stop & Review**.
 7. In the Interactive Studio tab:
    - **Edit:** Click step titles, descriptions, or add helpful **Tips (💡)**.
-   - **Zoom & Focus:** Use mouse wheel, pan, press **F** for one-time focus, or press **A** to toggle **Auto Focus (🎯)** mode across all steps.
+   - **Zoom & Focus:** Use mouse wheel, pan, press **F** for one-time focus, press **H** to toggle **Show/Hide Focus Spotlight (👁️)**, or press **A** to toggle **Auto Focus (🎯)** mode across all steps.
    - **Zen Mode (Z):** Hide navigation bars for distraction-free presentation.
    - **Dark Mode (T):** Toggle between Light and Dark themes anytime.
    - **Export HTML:** Save as a single, self-contained interactive web page.
