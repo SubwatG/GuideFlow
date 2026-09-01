@@ -498,7 +498,7 @@
       cursor: pointer;
       box-shadow: 0 0 4px rgba(0,0,0,0.3);
       padding: 0;
-      background: var(--hacker-green);
+      background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red);
       transition: transform 0.2s, box-shadow 0.2s;
     }
 
@@ -510,38 +510,62 @@
     .focus-color-palette {
       display: none;
       position: absolute;
-      bottom: calc(100% + 8px);
+      bottom: calc(100% + 12px);
       left: 50%;
       transform: translateX(-50%);
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
       background: var(--card-bg);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 8px;
-      gap: 6px;
       box-shadow: var(--shadow-lg);
       z-index: 50;
+      align-items: center;
+      justify-content: center;
     }
 
     .focus-color-palette.open {
       display: flex;
     }
 
+    .color-swatch-ring {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
     .color-swatch {
-      width: 20px;
-      height: 20px;
+      position: absolute;
+      width: 24px;
+      height: 24px;
       border-radius: 50%;
       cursor: pointer;
-      border: 2px solid transparent;
+      border: 2px solid white;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.25);
       transition: transform 0.15s;
     }
 
     .color-swatch:hover {
-      transform: scale(1.2);
+      transform: translate(-50%, -50%) scale(1.25) !important;
+      z-index: 5;
     }
 
     .color-swatch.active {
       border-color: var(--ink);
-      transform: scale(1.1);
+      box-shadow: 0 0 0 2px var(--mint), 0 2px 6px rgba(0,0,0,0.4);
+      transform: translate(-50%, -50%) scale(1.18) !important;
+    }
+
+    .color-swatch-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      box-shadow: inset 0 0 6px rgba(0,0,0,0.2);
     }
 
     .btn-toggle-spotlight {
@@ -1138,15 +1162,19 @@
             <span id="toggleSpotlightLabel">Show Focus</span>
           </button>
           <div class="focus-color-picker-wrap">
-            <button class="focus-color-btn" id="btnFocusColor" title="เลือกสีของวงแหวนโฟกัส"></button>
+            <button class="focus-color-btn" id="btnFocusColor" title="วงแหวนเลือกสีโฟกัส (Focus Color Ring)"></button>
             <div class="focus-color-palette" id="focusColorPalette">
-              <div class="color-swatch active" data-color="#39FF14" data-name="green" style="background: #39FF14;" title="Hacker Green"></div>
-              <div class="color-swatch" data-color="#FF3B30" data-name="red" style="background: #FF3B30;" title="Ruby Red"></div>
-              <div class="color-swatch" data-color="#FF9500" data-name="orange" style="background: #FF9500;" title="Sunset Orange"></div>
-              <div class="color-swatch" data-color="#FFCC00" data-name="yellow" style="background: #FFCC00;" title="Bright Yellow"></div>
-              <div class="color-swatch" data-color="#007AFF" data-name="blue" style="background: #007AFF;" title="Electric Blue"></div>
-              <div class="color-swatch" data-color="#AF52DE" data-name="purple" style="background: #AF52DE;" title="Neon Purple"></div>
-              <div class="color-swatch" data-color="#FF2D55" data-name="pink" style="background: #FF2D55;" title="Hot Pink"></div>
+              <div class="color-swatch-ring" id="colorSwatchRing">
+                <div class="color-swatch-center" id="colorSwatchCenter"></div>
+                <div class="color-swatch" data-color="#39FF14" data-angle="0" style="background: #39FF14;" title="Hacker Green"></div>
+                <div class="color-swatch" data-color="#00E5FF" data-angle="45" style="background: #00E5FF;" title="Cyan Glow"></div>
+                <div class="color-swatch" data-color="#007AFF" data-angle="90" style="background: #007AFF;" title="Electric Blue"></div>
+                <div class="color-swatch" data-color="#AF52DE" data-angle="135" style="background: #AF52DE;" title="Neon Purple"></div>
+                <div class="color-swatch" data-color="#FF2D55" data-angle="180" style="background: #FF2D55;" title="Hot Pink"></div>
+                <div class="color-swatch" data-color="#FF3B30" data-angle="225" style="background: #FF3B30;" title="Ruby Red"></div>
+                <div class="color-swatch" data-color="#FF9500" data-angle="270" style="background: #FF9500;" title="Sunset Orange"></div>
+                <div class="color-swatch" data-color="#FFCC00" data-angle="315" style="background: #FFCC00;" title="Bright Yellow"></div>
+              </div>
             </div>
           </div>
           <button class="btn-auto-focus" id="btnAutoFocus" title="เปิด/ปิด การซูมโฟกัสอัตโนมัติทุกสเต็ป (คีย์ลัด A)">

@@ -83,7 +83,23 @@ function startApp() {
 
   let editListenersInitialized = false;
 
-  // Mode Decision:
+  // Listen for storage changes in real-time (e.g. Cleared from popup or session reset)
+  if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.onChanged) {
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === "local") {
+        if (changes.currentSession) {
+          const newSession = changes.currentSession.newValue;
+          if (!newSession || newSession.length === 0) {
+            currentSession = [];
+            showEmpty();
+          } else {
+            currentSession = newSession;
+            initViewer();
+          }
+        }
+      }
+    });
+  }
   // If it has chrome.runtime and chrome.storage -> In Extension Studio (Allow Editing)
   // If window.__SCRIBE_DATA__ exists -> In Standalone Exported Mode (Allow Editing and Exporting)
   if (window.__SCRIBE_DATA__ && window.__SCRIBE_DATA__.session && window.__SCRIBE_DATA__.session.length > 0) {
@@ -391,7 +407,22 @@ function startApp() {
     btnToggleSpotlight.addEventListener("click", toggleSpotlightVisibility);
   }
 
-  // Focus Spotlight Color Picker
+  // Focus Spotlight Color Ring Picker
+  function positionSwatchesInRing() {
+    const swatches = focusColorPalette.querySelectorAll(".color-swatch");
+    const radius = 50; // pixels from center (ring radius)
+    const center = 70; // 140px width / 2
+    swatches.forEach(swatch => {
+      const angleDeg = parseFloat(swatch.dataset.angle) || 0;
+      const angleRad = (angleDeg - 90) * (Math.PI / 180);
+      const x = center + radius * Math.cos(angleRad);
+      const y = center + radius * Math.sin(angleRad);
+      swatch.style.left = `${x}px`;
+      swatch.style.top = `${y}px`;
+      swatch.style.transform = "translate(-50%, -50%)";
+    });
+  }
+
   function setSpotlightColor(hexColor) {
     document.documentElement.style.setProperty("--spotlight-color", hexColor);
     
@@ -406,8 +437,9 @@ function startApp() {
     document.documentElement.style.setProperty("--spotlight-soft", `rgba(${r}, ${g}, ${b}, 0.24)`);
     document.documentElement.style.setProperty("--spotlight-glow", `rgba(${r}, ${g}, ${b}, 0.72)`);
     
-    if (btnFocusColor) {
-      btnFocusColor.style.background = hexColor;
+    const colorSwatchCenter = document.getElementById("colorSwatchCenter");
+    if (colorSwatchCenter) {
+      colorSwatchCenter.style.background = hexColor;
     }
     
     localStorage.setItem("guideflow_spotlight_color", hexColor);
@@ -417,6 +449,10 @@ function startApp() {
         swatch.classList.toggle("active", swatch.dataset.color.toLowerCase() === hexColor.toLowerCase());
       });
     }
+  }
+
+  if (focusColorPalette) {
+    positionSwatchesInRing();
   }
 
   const savedSpotlightColor = localStorage.getItem("guideflow_spotlight_color") || "#39FF14";

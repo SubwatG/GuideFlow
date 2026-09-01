@@ -114,8 +114,12 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnClearData) {
     btnClearData.addEventListener("click", () => {
       if (confirm("คุณแน่ใจหรือไม่ว่าต้องการล้างข้อมูลขั้นตอนทั้งหมดที่บันทึกไว้?")) {
-        chrome.runtime.sendMessage({ type: "CLEAR_RECORDING" }, () => {
+        chrome.runtime.sendMessage({ type: "CLEAR_RECORDING" }, (res) => {
           guideTitleInput.value = "";
+          stepsCount.textContent = "0";
+          btnAppend.style.display = "none";
+          btnOpenViewer.style.display = "none";
+          btnClearData.style.display = "none";
           updateUI();
         });
       }
