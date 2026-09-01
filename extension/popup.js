@@ -16,6 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnResume = document.getElementById("btnResume");
   const btnStopPaused = document.getElementById("btnStopPaused");
   const btnOpenViewer = document.getElementById("btnOpenViewer");
+  const btnClearData = document.getElementById("btnClearData");
 
   function updateUI() {
     chrome.runtime.sendMessage({ type: "GET_STATUS" }, (res) => {
@@ -42,6 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
         recordingActions.style.display = "flex";
         pausedActions.style.display = "none";
         btnOpenViewer.style.display = "none";
+        if (btnClearData) btnClearData.style.display = "none";
       } else if (status === "paused") {
         statusDot.className = "dot paused";
         statusText.textContent = "พักการบันทึกชั่วคราว";
@@ -52,6 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
         recordingActions.style.display = "none";
         pausedActions.style.display = "flex";
         btnOpenViewer.style.display = "none";
+        if (btnClearData) btnClearData.style.display = "none";
       } else {
         statusDot.className = "dot";
         statusText.textContent = count > 0 ? "บันทึกเสร็จสิ้น" : "พร้อมเริ่มบันทึก";
@@ -62,6 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
         recordingActions.style.display = "none";
         pausedActions.style.display = "none";
         btnOpenViewer.style.display = count > 0 ? "flex" : "none";
+        if (btnClearData) btnClearData.style.display = count > 0 ? "flex" : "none";
       }
     });
   }
@@ -106,6 +110,17 @@ document.addEventListener("DOMContentLoaded", () => {
   btnOpenViewer.addEventListener("click", () => {
     chrome.tabs.create({ url: chrome.runtime.getURL("viewer.html") });
   });
+
+  if (btnClearData) {
+    btnClearData.addEventListener("click", () => {
+      if (confirm("คุณแน่ใจหรือไม่ว่าต้องการล้างข้อมูลขั้นตอนทั้งหมดที่บันทึกไว้?")) {
+        chrome.runtime.sendMessage({ type: "CLEAR_RECORDING" }, () => {
+          guideTitleInput.value = "";
+          updateUI();
+        });
+      }
+    });
+  }
 
   updateUI();
 });

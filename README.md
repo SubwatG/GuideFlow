@@ -101,6 +101,7 @@ GuideFlow is an open-source, client-side Chromium extension that automates the c
    - **Export HTML:** Save as a single, self-contained interactive web page.
    - **Export Images:** Save all screenshot steps directly into a local folder (with optional click-highlight overlay and `README.md` summary).
    - **Export / Import JSON:** Backup your full guide dataset to `.json` or load an existing `.json` file back into the editor anytime.
+   - **Clear Recorded Data:** Easily reset and clear stored steps directly from the extension popup.
    - **Print / PDF:** Generate an A4 print-ready document or save directly as PDF.
 
 ---

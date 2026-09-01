@@ -45,6 +45,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === "CLEAR_RECORDING") {
+    chrome.storage.local.set({ status: "idle", currentSession: [], sessionMeta: { title: "คู่มือการใช้งานระบบ", captureMode: "viewport" } }, () => {
+      updateBadge("idle", 0);
+      sendResponse({ status: "ok", session: [], count: 0 });
+    });
+    return true;
+  }
+
   if (message.type === "STOP_RECORDING") {
     chrome.storage.local.set({ status: "idle" }, () => {
       updateBadge("idle", 0);
