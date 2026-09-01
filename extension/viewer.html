@@ -484,6 +484,66 @@
       opacity: 0.9;
     }
 
+    .focus-color-picker-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .focus-color-btn {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid white;
+      cursor: pointer;
+      box-shadow: 0 0 4px rgba(0,0,0,0.3);
+      padding: 0;
+      background: var(--hacker-green);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .focus-color-btn:hover {
+      transform: scale(1.15);
+      box-shadow: 0 0 8px rgba(0,0,0,0.4);
+    }
+
+    .focus-color-palette {
+      display: none;
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 8px;
+      gap: 6px;
+      box-shadow: var(--shadow-lg);
+      z-index: 50;
+    }
+
+    .focus-color-palette.open {
+      display: flex;
+    }
+
+    .color-swatch {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.15s;
+    }
+
+    .color-swatch:hover {
+      transform: scale(1.2);
+    }
+
+    .color-swatch.active {
+      border-color: var(--ink);
+      transform: scale(1.1);
+    }
+
     .btn-toggle-spotlight {
       background: var(--card-bg);
       color: var(--ink);
@@ -537,6 +597,12 @@
     }
 
     /* Spotlight marker */
+    :root {
+      --spotlight-color: var(--hacker-green);
+      --spotlight-soft: var(--hacker-green-soft);
+      --spotlight-glow: var(--hacker-green-glow);
+    }
+
     .spotlight-ring {
       position: absolute;
       transform: translate(-50%, -50%);
@@ -544,14 +610,13 @@
       z-index: 10;
     }
 
-
     .ring-pulse {
       width: 50px;
       height: 50px;
-      border: 3.5px solid var(--hacker-green);
+      border: 3.5px solid var(--spotlight-color);
       border-radius: 50%;
-      background: var(--hacker-green-soft);
-      box-shadow: 0 0 25px var(--hacker-green-glow), inset 0 0 15px rgba(57, 255, 20, 0.42);
+      background: var(--spotlight-soft);
+      box-shadow: 0 0 25px var(--spotlight-glow), inset 0 0 15px var(--spotlight-soft);
       animation: pulse-ring 1.8s cubic-bezier(0.45, 0, 0.55, 1) infinite;
     }
 
@@ -562,10 +627,10 @@
       width: 12px;
       height: 12px;
       background: #FFF;
-      border: 2.5px solid var(--hacker-green);
+      border: 2.5px solid var(--spotlight-color);
       border-radius: 50%;
       transform: translate(-50%, -50%);
-      box-shadow: 0 0 12px var(--hacker-green-glow);
+      box-shadow: 0 0 12px var(--spotlight-glow);
     }
 
     @keyframes pulse-ring {
@@ -588,11 +653,11 @@
     /* Target Box highlight */
     .target-box {
       position: absolute;
-      border: 2.5px dashed var(--hacker-green);
-      background: rgba(57, 255, 20, 0.10);
+      border: 2.5px dashed var(--spotlight-color);
+      background: var(--spotlight-soft);
       border-radius: 8px;
       pointer-events: none;
-      box-shadow: 0 0 18px rgba(57, 255, 20, 0.30);
+      box-shadow: 0 0 18px var(--spotlight-glow);
     }
 
     /* Step Custom Note / Tip Callout */
@@ -1072,6 +1137,18 @@
             <span id="toggleSpotlightIcon">👁️</span>
             <span id="toggleSpotlightLabel">Show Focus</span>
           </button>
+          <div class="focus-color-picker-wrap">
+            <button class="focus-color-btn" id="btnFocusColor" title="เลือกสีของวงแหวนโฟกัส"></button>
+            <div class="focus-color-palette" id="focusColorPalette">
+              <div class="color-swatch active" data-color="#39FF14" data-name="green" style="background: #39FF14;" title="Hacker Green"></div>
+              <div class="color-swatch" data-color="#FF3B30" data-name="red" style="background: #FF3B30;" title="Ruby Red"></div>
+              <div class="color-swatch" data-color="#FF9500" data-name="orange" style="background: #FF9500;" title="Sunset Orange"></div>
+              <div class="color-swatch" data-color="#FFCC00" data-name="yellow" style="background: #FFCC00;" title="Bright Yellow"></div>
+              <div class="color-swatch" data-color="#007AFF" data-name="blue" style="background: #007AFF;" title="Electric Blue"></div>
+              <div class="color-swatch" data-color="#AF52DE" data-name="purple" style="background: #AF52DE;" title="Neon Purple"></div>
+              <div class="color-swatch" data-color="#FF2D55" data-name="pink" style="background: #FF2D55;" title="Hot Pink"></div>
+            </div>
+          </div>
           <button class="btn-auto-focus" id="btnAutoFocus" title="เปิด/ปิด การซูมโฟกัสอัตโนมัติทุกสเต็ป (คีย์ลัด A)">
             <span>🎯</span>
             <span id="autoFocusLabel">Auto Focus</span>

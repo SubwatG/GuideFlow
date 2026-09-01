@@ -46,6 +46,8 @@ function startApp() {
   const btnToggleSpotlight = document.getElementById("btnToggleSpotlight");
   const toggleSpotlightIcon = document.getElementById("toggleSpotlightIcon");
   const toggleSpotlightLabel = document.getElementById("toggleSpotlightLabel");
+  const btnFocusColor = document.getElementById("btnFocusColor");
+  const focusColorPalette = document.getElementById("focusColorPalette");
   const btnAutoFocus = document.getElementById("btnAutoFocus");
   const autoFocusLabel = document.getElementById("autoFocusLabel");
   const zoomLevelText = document.getElementById("zoomLevelText");
@@ -388,6 +390,59 @@ function startApp() {
   if (btnToggleSpotlight) {
     btnToggleSpotlight.addEventListener("click", toggleSpotlightVisibility);
   }
+
+  // Focus Spotlight Color Picker
+  function setSpotlightColor(hexColor) {
+    document.documentElement.style.setProperty("--spotlight-color", hexColor);
+    
+    // Parse hex to rgba
+    let c = hexColor.replace("#", "");
+    if (c.length === 3) c = c.split("").map(x => x + x).join("");
+    const num = parseInt(c, 16);
+    const r = (num >> 16) & 255;
+    const g = (num >> 8) & 255;
+    const b = num & 255;
+    
+    document.documentElement.style.setProperty("--spotlight-soft", `rgba(${r}, ${g}, ${b}, 0.24)`);
+    document.documentElement.style.setProperty("--spotlight-glow", `rgba(${r}, ${g}, ${b}, 0.72)`);
+    
+    if (btnFocusColor) {
+      btnFocusColor.style.background = hexColor;
+    }
+    
+    localStorage.setItem("guideflow_spotlight_color", hexColor);
+
+    if (focusColorPalette) {
+      focusColorPalette.querySelectorAll(".color-swatch").forEach(swatch => {
+        swatch.classList.toggle("active", swatch.dataset.color.toLowerCase() === hexColor.toLowerCase());
+      });
+    }
+  }
+
+  const savedSpotlightColor = localStorage.getItem("guideflow_spotlight_color") || "#39FF14";
+  setSpotlightColor(savedSpotlightColor);
+
+  if (btnFocusColor && focusColorPalette) {
+    btnFocusColor.addEventListener("click", (e) => {
+      e.stopPropagation();
+      focusColorPalette.classList.toggle("open");
+    });
+
+    focusColorPalette.querySelectorAll(".color-swatch").forEach(swatch => {
+      swatch.addEventListener("click", (e) => {
+        e.stopPropagation();
+        setSpotlightColor(swatch.dataset.color);
+        focusColorPalette.classList.remove("open");
+      });
+    });
+
+    window.addEventListener("click", (e) => {
+      if (!focusColorPalette.contains(e.target) && e.target !== btnFocusColor) {
+        focusColorPalette.classList.remove("open");
+      }
+    });
+  }
+
   btnAutoFocus.addEventListener("click", toggleAutoFocus);
 
   // Mouse Wheel Zoom
@@ -566,7 +621,11 @@ function startApp() {
 
   function saveToStorage() {
     if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
-      chrome.storage.local.set({ currentSession, sessionMeta });
+      if (currentSession && currentSession.length > 0) {
+        chrome.storage.local.set({ currentSession, sessionMeta });
+      } else {
+        chrome.storage.local.remove(["currentSession", "sessionMeta"]);
+      }
     }
   }
 
