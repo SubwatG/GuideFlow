@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GuideFlow Image Editor — ตกแต่งและแก้ไขภาพแคป</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Mali:wght@500;600;700&family=Noto+Sans+Thai+Looped:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --ink: #26394A;
+      --cream: #FBFAF7;
+      --mint: #5FA99E;
+      --mint-dark: #46867D;
+      --coral: #E8877A;
+      --coral-hover: #D97365;
+      --gold: #D2A54B;
+      --sky: #3B82F6;
+      --bg: #0F172A;
+      --card-bg: #1E293B;
+      --toolbar-bg: #1E293B;
+      --border: #334155;
+      --text-muted: #94A3B8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Noto Sans Thai Looped', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: #F8FAFC;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* Top Toolbar */
+    .toolbar {
+      background: var(--toolbar-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      z-index: 10;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .brand-badge {
+      background: var(--coral);
+      color: white;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .tool-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #0F172A;
+      padding: 4px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .tool-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .tool-btn svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
+
+    .tool-btn:hover {
+      background: #334155;
+      color: #FFF;
+    }
+
+    .tool-btn.active {
+      background: var(--sky);
+      color: #FFF;
+    }
+
+    .color-picker-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0 4px;
+    }
+
+    .color-dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.15s;
+    }
+
+    .color-dot.active {
+      transform: scale(1.2);
+      border-color: #FFF;
+    }
+
+    .actions-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-action {
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: opacity 0.15s;
+    }
+
+    .btn-action:hover {
+      opacity: 0.9;
+    }
+
+    .btn-download {
+      background: var(--sky);
+      color: white;
+    }
+
+    .btn-copy {
+      background: #334155;
+      color: white;
+    }
+
+    .btn-append {
+      background: var(--coral);
+      color: white;
+    }
+
+    /* Canvas Work Area */
+    .editor-body {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: auto;
+      background: #020617;
+      padding: 24px;
+      position: relative;
+    }
+
+    #canvasContainer {
+      position: relative;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+      border-radius: 4px;
+      overflow: hidden;
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    canvas {
+      display: block;
+      cursor: crosshair;
+    }
+
+    .toast-msg {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #22C55E;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      display: none;
+      z-index: 9999;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Toolbar -->
+  <div class="toolbar">
+    <div class="brand">
+      <img src="icons/icon48.png" alt="GuideFlow" style="width: 24px; height: 24px; border-radius: 6px;" />
+      <span>GuideFlow Editor</span>
+      <span style="font-size: 11px; font-weight: 600; color: #0066FF; background: rgba(0, 102, 255, 0.08); padding: 1px 6px; border-radius: 999px;">v1.2.0</span>
+    </div>
+
+    <!-- Drawing Tools -->
+    <div class="tool-group">
+      <button class="tool-btn active" id="toolRect" title="สี่เหลี่ยมกรอบเน้น">
+        <svg viewBox="0 0 24 24"><path d="M3 3h18v18H3V3zm2 2v14h14V5H5z"/></svg>
+        กรอบ (Box)
+      </button>
+      <button class="tool-btn" id="toolArrow" title="ลูกศรชี้จุด">
+        <svg viewBox="0 0 24 24"><path d="M12 2l-1.41 1.41L16.17 9H4v2h12.17l-5.58 5.59L12 18l8-8-8-8z"/></svg>
+        ลูกศร (Arrow)
+      </button>
+      <button class="tool-btn" id="toolHighlight" title="ไฮไลต์ปากกาเน้นข้อความ">
+        <svg viewBox="0 0 24 24"><path d="M20.71 5.63l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83a1 1 0 0 0 0-1.41zM3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+        ไฮไลต์
+      </button>
+      <button class="tool-btn" id="toolText" title="เพิ่มข้อความกำกับ">
+        <svg viewBox="0 0 24 24"><path d="M5 4v3h5.5v12h3V7H19V4H5z"/></svg>
+        ข้อความ
+      </button>
+
+      <!-- Color Palette -->
+      <div class="color-picker-wrapper">
+        <div class="color-dot active" data-color="#EF4444" style="background: #EF4444;" title="แดง"></div>
+        <div class="color-dot" data-color="#3B82F6" style="background: #3B82F6;" title="น้ำเงิน"></div>
+        <div class="color-dot" data-color="#10B981" style="background: #10B981;" title="เขียว"></div>
+        <div class="color-dot" data-color="#F59E0B" style="background: #F59E0B;" title="ส้มทอง"></div>
+        <div class="color-dot" data-color="#8B5CF6" style="background: #8B5CF6;" title="ม่วง"></div>
+      </div>
+
+      <button class="tool-btn" id="btnUndo" title="ย้อนกลับ (Ctrl+Z)">
+        <svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>
+        Undo
+      </button>
+      <button class="tool-btn" id="btnClear" title="ล้างทั้งหมด">
+        <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        Clear
+      </button>
+    </div>
+
+    <!-- Output Actions -->
+    <div class="actions-group">
+      <button class="btn-action btn-copy" id="btnCopyResult">คัดลอก (Copy)</button>
+      <button class="btn-action btn-download" id="btnDownloadResult">บันทึกรูปภาพ (PNG)</button>
+      <button class="btn-action btn-append" id="btnAppendResult">เพิ่มเข้าคู่มือ</button>
+    </div>
+  </div>
+
+  <!-- Work Area -->
+  <div class="editor-body">
+    <div id="canvasContainer">
+      <canvas id="paintCanvas"></canvas>
+    </div>
+  </div>
+
+  <div class="toast-msg" id="toastMsg">ดำเนินการเรียบร้อย!</div>
+
+  <script src="editor.js"></script>
+</body>
+</html>

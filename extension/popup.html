@@ -31,26 +31,153 @@
     .header {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       margin-bottom: 14px;
       padding-bottom: 10px;
       border-bottom: 1px solid var(--border);
     }
 
-    .logo-badge {
-      background: var(--ink);
-      color: var(--cream);
-      font-weight: 700;
-      font-size: 14px;
-      padding: 4px 8px;
-      border-radius: 6px;
-      letter-spacing: 0.5px;
+    .logo-box {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(0, 102, 255, 0.2);
+    }
+
+    .logo-img {
+      width: 100%;
+      height: 100%;
+      border-radius: 8px;
+    }
+
+    .title-wrap {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
     }
 
     .title {
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 700;
       color: var(--ink);
+      letter-spacing: -0.2px;
+    }
+
+    .version-badge {
+      font-size: 10px;
+      font-weight: 600;
+      color: #0066FF;
+      background: rgba(0, 102, 255, 0.08);
+      padding: 1px 6px;
+      border-radius: 999px;
+    }
+
+    .tab-bar {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 12px;
+      background: #E2E8F0;
+      padding: 3px;
+      border-radius: 8px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+      width: auto;
+    }
+
+    .tab-btn.active {
+      background: var(--card-bg);
+      color: var(--ink);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    .tab-btn:hover:not(.active) {
+      color: var(--ink);
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    /* Mode Grid Cards (Visible Part, Full Page, Selected Area) */
+    .mode-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .mode-card {
+      background: #F1F5F9;
+      border: 1.5px solid transparent;
+      border-radius: 10px;
+      padding: 10px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: #64748B;
+      user-select: none;
+      width: 100%;
+    }
+
+    .mode-card svg {
+      width: 28px;
+      height: 28px;
+      fill: #94A3B8;
+      transition: fill 0.2s ease, transform 0.2s ease;
+    }
+
+    .mode-card span {
+      font-size: 11px;
+      font-weight: 600;
+      text-align: center;
+      line-height: 1.2;
+    }
+
+    .mode-card:hover {
+      background: #E2E8F0;
+      color: var(--ink);
+    }
+
+    .mode-card:hover svg {
+      fill: var(--ink);
+    }
+
+    .mode-card.active {
+      background: #EFF6FF;
+      border-color: #3B82F6;
+      color: #1D4ED8;
+      box-shadow: 0 2px 5px rgba(59, 130, 246, 0.15);
+    }
+
+    .mode-card.active svg {
+      fill: #3B82F6;
+      transform: scale(1.05);
     }
 
     .status-card {
@@ -235,10 +362,33 @@
 <body>
 
   <div class="header">
-    <div class="logo-badge">FLOW</div>
-    <div class="title">GuideFlow</div>
+    <div class="logo-box">
+      <img src="icons/icon48.png" alt="GuideFlow Logo" class="logo-img" />
+    </div>
+    <div class="title-wrap">
+      <div class="title">GuideFlow</div>
+      <div class="version-badge">v1.2.0</div>
+    </div>
   </div>
 
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tabWorkflowBtn" type="button">
+      <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+        <circle cx="8" cy="8" r="6"/>
+      </svg>
+      บันทึกขั้นตอน
+    </button>
+    <button class="tab-btn" id="tabCaptureBtn" type="button">
+      <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1v6zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 8.828 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4H2z"/>
+        <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5zm0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0z"/>
+      </svg>
+      แคปภาพหน้าจอ
+    </button>
+  </div>
+
+  <!-- Tab 1: บันทึกขั้นตอนตามปกติ -->
+  <div class="tab-panel active" id="tabWorkflowPanel">
   <div class="form-group" id="titleGroup">
     <label for="guideTitle">ชื่อคู่มือ (Guide Title)</label>
     <input type="text" id="guideTitle" placeholder="เช่น วิธีเข้าสู่ระบบและสร้าง Prompt ใน Gemini" />
@@ -316,6 +466,48 @@
 
   <div class="footer-note">
     💡 คลิกปุ่มหรือพิมพ์บนหน้าเว็บตามปกติ Extension จะแคปจอและมาร์กจุดให้เอง 100%
+  </div>
+  </div>
+
+  <!-- Tab 2: แคปภาพหน้าจอเดี่ยว / ปัจจุบัน -->
+  <div class="tab-panel" id="tabCapturePanel">
+    <label style="margin-bottom: 6px;">ขอบเขตการแคปภาพ (Capture Mode)</label>
+    <div class="mode-grid" id="snapshotModeGrid">
+      <div class="mode-card active" data-mode="viewport" id="cardModeViewport">
+        <svg viewBox="0 0 24 24">
+          <path d="M4 3h16a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm0 2v3h16V5H4zm0 5v9h16v-9H4zm2-3.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+        </svg>
+        <span>Visible Part</span>
+      </div>
+      <div class="mode-card" data-mode="fullpage" id="cardModeFullpage">
+        <svg viewBox="0 0 24 24">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm1 7V3.5L18.5 7H15zM7 12h10v2H7v-2zm0 4h10v2H7v-2z"/>
+        </svg>
+        <span>Full Page</span>
+      </div>
+      <div class="mode-card" data-mode="selected" id="cardModeSelected">
+        <svg viewBox="0 0 24 24">
+          <path d="M7 3v2H5v2H3V5a2 2 0 0 1 2-2h2zm14 0a2 2 0 0 1 2 2v2h-2V5h-2V3h2zM3 17v2a2 2 0 0 0 2 2h2v-2H5v-2H3zm18 0v2h-2v2h2a2 2 0 0 0 2-2v-2h-2zM9 7h6a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z"/>
+        </svg>
+        <span>Selected Area</span>
+      </div>
+    </div>
+
+    <div class="btn-group">
+      <button class="btn-record" id="btnTakeSnapshot" style="background: var(--mint);">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1v6zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 8.828 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4H2z"/>
+          <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5zm0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0z"/>
+        </svg>
+        แคปภาพหน้าจอทันที (Capture Screen)
+      </button>
+    </div>
+
+    <div id="snapshotFeedback" style="display: none; margin-top: 12px; font-size: 12px; padding: 8px 10px; border-radius: 6px; text-align: center; font-weight: 600;"></div>
+
+    <div class="footer-note">
+      📸 เมื่อกดแคปภาพ ระบบจะเปิดหน้าตัวอย่าง (Preview) พร้อมเครื่องมือแต่งภาพและดาวน์โหลดทันที
+    </div>
   </div>
 
   <script src="popup.js"></script>

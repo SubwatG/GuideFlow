@@ -25,6 +25,10 @@ GuideFlow is an open-source, client-side Chromium extension that automates the c
 ### 2. Key Features
 - **Automated Interaction Capture:** Detects click coordinates and target element boundaries via DOM events.
 - **Viewport Snapshot:** Captures visible tabs via Chrome Extension APIs without external screen capture software.
+- **Dedicated Screen Capture Tab:** Instant snapshots featuring 3 dedicated capture modes inspired by modern capture tools:
+  - **Visible Part:** Instant capture of the visible browser area.
+  - **Full Page:** Automatically scrolls and stitches the entire web page.
+  - **Selected Area:** Interactive crosshair selection overlay to crop and capture custom regions.
 - **Interactive Viewer & Studio:**
   - Pan and Zoom navigation with dedicated focus on highlighted elements.
   - Step reordering, text editing, and custom tips/warnings annotation.

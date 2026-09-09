@@ -70,6 +70,7 @@ function startApp() {
 
   // Export Images modal
   const exportImagesModal = document.getElementById("exportImagesModal");
+  const selExportResolution = document.getElementById("selExportResolution");
   const chkIncludeHighlight = document.getElementById("chkIncludeHighlight");
   const chkIncludeReadme = document.getElementById("chkIncludeReadme");
   const btnCancelExportImages = document.getElementById("btnCancelExportImages");
@@ -82,6 +83,71 @@ function startApp() {
   const btnSaveEditTitle = document.getElementById("btnSaveEditTitle");
 
   let editListenersInitialized = false;
+
+  const btnCopySingle = document.getElementById("btnCopySingle");
+  const btnDownloadSingle = document.getElementById("btnDownloadSingle");
+  const toastMessage = document.getElementById("toastMessage");
+
+  function showToast(text) {
+    if (!toastMessage) return;
+    toastMessage.textContent = text;
+    toastMessage.style.display = "block";
+    toastMessage.style.opacity = "1";
+    setTimeout(() => {
+      toastMessage.style.opacity = "0";
+      setTimeout(() => {
+        toastMessage.style.display = "none";
+      }, 200);
+    }, 2500);
+  }
+
+  if (btnCopySingle) {
+    btnCopySingle.addEventListener("click", async () => {
+      const step = currentSession[currentStepIndex];
+      const imgSrc = step ? step.screenshot : slideImg.src;
+      if (!imgSrc) return;
+      try {
+        const res = await fetch(imgSrc);
+        const blob = await res.blob();
+        await navigator.clipboard.write([
+          new ClipboardItem({ [blob.type || "image/png"]: blob })
+        ]);
+        showToast("คัดลอกรูปภาพลงคลิปบอร์ดแล้ว!");
+      } catch (err) {
+        // fallback download if clipboard API restricted
+        const a = document.createElement("a");
+        a.href = imgSrc;
+        a.download = `guideflow_capture_${Date.now()}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast("บันทึกไฟล์ภาพให้แทนเนื่องจากสิทธิ์คลิปบอร์ด");
+      }
+    });
+  }
+
+  if (btnDownloadSingle) {
+    btnDownloadSingle.addEventListener("click", async () => {
+      const step = currentSession[currentStepIndex];
+      const imgSrc = step ? step.screenshot : slideImg.src;
+      if (!imgSrc) return;
+      const safeTitle = (sessionMeta.title || "screenshot").replace(/[/\\?%*:|"<>]/g, "-");
+      const blob = await dataUrlToBlob(imgSrc, "4k");
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `guideflow_${safeTitle}_${Date.now()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast("ดาวน์โหลดภาพ (4K) เรียบร้อยแล้ว!");
+    });
+  }
+
+  // Check URL query parameters (e.g. viewer.html?mode=capture)
+  const urlParams = new URLSearchParams(window.location.search);
+  const isSingleCaptureMode = urlParams.get("mode") === "capture";
 
   // Listen for storage changes in real-time (e.g. Cleared from popup or session reset)
   if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.onChanged) {
@@ -110,19 +176,50 @@ function startApp() {
     initViewer();
     setupEditListeners();
   } else if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
-    // Inside Extension Studio: Allow Editing
-    chrome.storage.local.get(["currentSession", "sessionMeta"], (res) => {
-      if (res.currentSession && res.currentSession.length > 0) {
-        currentSession = res.currentSession;
-        sessionMeta = res.sessionMeta || sessionMeta;
-        isEditMode = true; // EDIT / STUDIO MODE
-        applyModeUI();
-        initViewer();
-        setupEditListeners();
-      } else {
-        showEmpty();
-      }
-    });
+    if (isSingleCaptureMode) {
+      chrome.storage.local.get(["singleCapturePreview"], (res) => {
+        if (res.singleCapturePreview && res.singleCapturePreview.dataUrl) {
+          const cap = res.singleCapturePreview;
+          currentSession = [{
+            id: "capture_" + (cap.timestamp || Date.now()),
+            timestamp: cap.timestamp || Date.now(),
+            description: cap.title || "ภาพแคปหน้าจอ",
+            screenshot: cap.dataUrl,
+            screenshots: [cap.dataUrl]
+          }];
+          sessionMeta = { title: cap.title || "ภาพแคปหน้าจอ" };
+          isEditMode = true;
+          applyModeUI();
+          initViewer();
+          setupEditListeners();
+          // Show Copy and Download buttons specifically for single capture preview
+          if (btnCopySingle) btnCopySingle.style.display = "inline-flex";
+          if (btnDownloadSingle) btnDownloadSingle.style.display = "inline-flex";
+          // Hide timeline and doc view toggle if only single screenshot
+          const viewToggle = document.querySelector(".view-toggle");
+          if (viewToggle) viewToggle.style.display = "none";
+          if (timelineBar) timelineBar.style.display = "none";
+          if (btnPrev) btnPrev.style.display = "none";
+          if (btnNext) btnNext.style.display = "none";
+        } else {
+          showEmpty();
+        }
+      });
+    } else {
+      // Inside Extension Studio: Allow Editing
+      chrome.storage.local.get(["currentSession", "sessionMeta"], (res) => {
+        if (res.currentSession && res.currentSession.length > 0) {
+          currentSession = res.currentSession;
+          sessionMeta = res.sessionMeta || sessionMeta;
+          isEditMode = true; // EDIT / STUDIO MODE
+          applyModeUI();
+          initViewer();
+          setupEditListeners();
+        } else {
+          showEmpty();
+        }
+      });
+    }
   } else {
     showEmpty();
   }
@@ -200,7 +297,12 @@ function startApp() {
     const step = currentSession[index];
     if (!step) return;
 
-    slideStepBadge.textContent = `Step ${index + 1} of ${currentSession.length}`;
+    if (isSingleCaptureMode) {
+      slideStepBadge.textContent = "ภาพแคปหน้าจอ (Screenshot)";
+      if (headerStepTools) headerStepTools.style.display = "none";
+    } else {
+      slideStepBadge.textContent = `Step ${index + 1} of ${currentSession.length}`;
+    }
     slideStepTitle.textContent = step.description || `ขั้นตอนที่ ${index + 1}`;
     slideImg.src = step.screenshot;
 
@@ -779,18 +881,19 @@ function startApp() {
 
   btnConfirmExportImages.addEventListener("click", async () => {
     exportImagesModal.classList.remove("open");
+    const resolution = selExportResolution ? selExportResolution.value : "original";
     const includeHighlight = chkIncludeHighlight.checked;
     const includeReadme = chkIncludeReadme.checked;
 
     try {
       if (!window.showDirectoryPicker) {
         // Fallback for browsers without File System Access API
-        await exportImagesFallback(includeHighlight, includeReadme);
+        await exportImagesFallback(includeHighlight, includeReadme, resolution);
         return;
       }
 
       const dirHandle = await window.showDirectoryPicker({ mode: "readwrite" });
-      await exportImagesToDirectory(dirHandle, includeHighlight, includeReadme);
+      await exportImagesToDirectory(dirHandle, includeHighlight, includeReadme, resolution);
       alert("ส่งออกรูปภาพลงโฟลเดอร์เรียบร้อยแล้ว!");
     } catch (err) {
       if (err.name !== "AbortError") {
@@ -800,17 +903,36 @@ function startApp() {
     }
   });
 
-  async function renderHighlightedImage(dataUrl, step) {
+  async function renderHighlightedImage(dataUrl, step, resolution = "original") {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.naturalWidth || img.width;
-        canvas.height = img.naturalHeight || img.height;
-        const ctx = canvas.getContext("2d");
+        let targetWidth = img.naturalWidth || img.width;
+        let targetHeight = img.naturalHeight || img.height;
 
-        // Draw original screenshot
-        ctx.drawImage(img, 0, 0);
+        if (resolution === "4k") {
+          const scale = 3840 / targetWidth;
+          if (scale > 1) {
+            targetWidth = 3840;
+            targetHeight = Math.round(targetHeight * scale);
+          }
+        } else if (resolution === "2k") {
+          const scale = 2560 / targetWidth;
+          if (scale > 1) {
+            targetWidth = 2560;
+            targetHeight = Math.round(targetHeight * scale);
+          }
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        const ctx = canvas.getContext("2d");
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+
+        // Draw original screenshot scaled
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
 
         if (step.coords && step.coords.xPercent !== undefined) {
           const x = (step.coords.xPercent / 100) * canvas.width;
@@ -867,12 +989,48 @@ function startApp() {
     });
   }
 
-  async function dataUrlToBlob(dataUrl) {
-    const res = await fetch(dataUrl);
-    return await res.blob();
+  async function dataUrlToBlob(dataUrl, resolution = "original") {
+    if (resolution === "original") {
+      const res = await fetch(dataUrl);
+      return await res.blob();
+    }
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        let targetWidth = img.naturalWidth || img.width;
+        let targetHeight = img.naturalHeight || img.height;
+
+        if (resolution === "4k") {
+          const scale = 3840 / targetWidth;
+          if (scale > 1) {
+            targetWidth = 3840;
+            targetHeight = Math.round(targetHeight * scale);
+          }
+        } else if (resolution === "2k") {
+          const scale = 2560 / targetWidth;
+          if (scale > 1) {
+            targetWidth = 2560;
+            targetHeight = Math.round(targetHeight * scale);
+          }
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        const ctx = canvas.getContext("2d");
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+        canvas.toBlob((blob) => resolve(blob), "image/png");
+      };
+      img.onerror = () => {
+        fetch(dataUrl).then(res => res.blob()).then(resolve);
+      };
+      img.src = dataUrl;
+    });
   }
 
-  async function exportImagesToDirectory(dirHandle, includeHighlight, includeReadme) {
+  async function exportImagesToDirectory(dirHandle, includeHighlight, includeReadme, resolution = "original") {
     for (let i = 0; i < currentSession.length; i++) {
       const step = currentSession[i];
       const stepNum = String(i + 1).padStart(2, "0");
@@ -892,9 +1050,9 @@ function startApp() {
 
         let blob;
         if (includeHighlight && sIdx === 0) {
-          blob = await renderHighlightedImage(shotUrl, step);
+          blob = await renderHighlightedImage(shotUrl, step, resolution);
         } else {
-          blob = await dataUrlToBlob(shotUrl);
+          blob = await dataUrlToBlob(shotUrl, resolution);
         }
 
         const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
@@ -924,7 +1082,7 @@ function startApp() {
     }
   }
 
-  async function exportImagesFallback(includeHighlight, includeReadme) {
+  async function exportImagesFallback(includeHighlight, includeReadme, resolution = "original") {
     for (let i = 0; i < currentSession.length; i++) {
       const step = currentSession[i];
       const stepNum = String(i + 1).padStart(2, "0");
@@ -941,8 +1099,8 @@ function startApp() {
         const partSuffix = screenshots.length > 1 ? `_part${sIdx + 1}` : "";
         const fileName = `step-${stepNum}_${safeDesc}${partSuffix}.png`;
         let blob = includeHighlight && sIdx === 0
-          ? await renderHighlightedImage(screenshots[sIdx], step)
-          : await dataUrlToBlob(screenshots[sIdx]);
+          ? await renderHighlightedImage(screenshots[sIdx], step, resolution)
+          : await dataUrlToBlob(screenshots[sIdx], resolution);
 
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");

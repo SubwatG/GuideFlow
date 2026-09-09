@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes">
+  <title>ตัวอย่างภาพแคปหน้าจอ — GuideFlow</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Mali:wght@500;600;700&family=Noto+Sans+Thai+Looped:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+
+  <style>
+    :root {
+      --ink: #26394A;
+      --cream: #FBFAF7;
+      --mint: #5FA99E;
+      --mint-dark: #46867D;
+      --coral: #E8877A;
+      --coral-hover: #D97365;
+      --sky: #3B82F6;
+      --sky-hover: #2563EB;
+      --bg: #DCE2E7;
+      --card-bg: #FFFFFF;
+      --header-bg: rgba(251, 250, 247, 0.94);
+      --border: #E2E8F0;
+      --text-muted: #64748B;
+      --shadow-sm: 0 4px 12px rgba(38, 57, 74, 0.06);
+      --shadow-md: 0 12px 32px rgba(38, 57, 74, 0.10);
+      --shadow-lg: 0 24px 60px rgba(38, 57, 74, 0.14);
+    }
+
+    body.dark-theme {
+      --ink: #E2E8F0;
+      --cream: #1E293B;
+      --bg: #0F172A;
+      --card-bg: #1E293B;
+      --header-bg: rgba(30, 41, 59, 0.94);
+      --border: #334155;
+      --text-muted: #94A3B8;
+      --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.45);
+      --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.6);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Noto Sans Thai Looped', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow-x: hidden;
+      touch-action: pan-y pinch-zoom;
+    }
+
+    /* Ambient background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 15% 18%, rgba(122, 111, 177, 0.12), transparent 28%),
+        radial-gradient(circle at 84% 78%, rgba(95, 169, 158, 0.14), transparent 30%);
+      z-index: 0;
+    }
+
+    /* HEADER */
+    header {
+      background: var(--header-bg);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-badge {
+      background: var(--ink);
+      color: var(--cream);
+      font-weight: 800;
+      font-size: 13px;
+      padding: 4px 10px;
+      border-radius: 8px;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    }
+
+    .guide-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--ink);
+      max-width: 480px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* EDIT TOOLBAR */
+    .edit-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(15, 23, 42, 0.06);
+      padding: 4px 8px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    body.dark-theme .edit-toolbar {
+      background: rgba(15, 23, 42, 0.6);
+    }
+
+    .tool-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+      font-family: inherit;
+    }
+
+    .tool-btn svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+    }
+
+    .tool-btn:hover {
+      background: rgba(0, 0, 0, 0.05);
+      color: var(--ink);
+    }
+
+    body.dark-theme .tool-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #FFF;
+    }
+
+    .tool-btn.active {
+      background: var(--sky);
+      color: #FFF;
+    }
+
+    .tool-btn.active svg {
+      fill: #FFF;
+    }
+
+    .color-picker-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin: 0 4px;
+    }
+
+    .color-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.15s;
+    }
+
+    .color-dot.active {
+      transform: scale(1.2);
+      border-color: #FFF;
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3);
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      color: var(--ink);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      font-family: 'Noto Sans Thai Looped', sans-serif;
+      box-shadow: var(--shadow-sm);
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      background: var(--border);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-primary {
+      background: var(--sky);
+      border-color: var(--sky);
+      color: #FFF;
+    }
+
+    .btn-primary:hover {
+      background: var(--sky-hover);
+      border-color: var(--sky-hover);
+      color: #FFF;
+    }
+
+    .btn-mint {
+      background: var(--mint);
+      border-color: var(--mint);
+      color: #FFF;
+    }
+
+    .btn-mint:hover {
+      background: var(--mint-dark);
+      border-color: var(--mint-dark);
+      color: #FFF;
+    }
+
+    .btn-coral {
+      background: var(--coral);
+      border-color: var(--coral);
+      color: #FFF;
+    }
+
+    .btn-coral:hover {
+      background: var(--coral-hover);
+      border-color: var(--coral-hover);
+      color: #FFF;
+    }
+
+    /* MAIN CONTAINER */
+    #previewContainer {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px 20px;
+      max-width: min(1680px, 96vw);
+      margin: 0 auto;
+      width: 100%;
+      height: calc(100vh - 72px);
+      min-height: 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    .preview-card {
+      background: var(--cream);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      overflow: hidden;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .preview-header {
+      padding: 14px 24px;
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .step-badge {
+      background: var(--sky);
+      color: #FFF;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 12px;
+      letter-spacing: 0.5px;
+    }
+
+    .step-text-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--ink);
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .stage-wrapper {
+      flex: 1;
+      position: relative;
+      background: #0B1120;
+      overflow: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 0;
+      padding: 24px;
+    }
+
+    .image-wrapper {
+      position: relative;
+      display: inline-block;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      border-radius: 6px;
+      overflow: hidden;
+      line-height: 0;
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    .stage-image {
+      display: block;
+      max-width: 100%;
+      max-height: calc(100vh - 180px);
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    #paintCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      cursor: default;
+    }
+
+    #paintCanvas.drawing-mode {
+      cursor: crosshair;
+    }
+
+    /* Toast notification */
+    #toastMsg {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #22C55E;
+      color: white;
+      padding: 10px 22px;
+      border-radius: 30px;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+      display: none;
+      z-index: 99999;
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translate(-50%, 10px); }
+      to { opacity: 1; transform: translate(-50%, 0); }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="brand">
+      <span class="brand-badge">PREVIEW</span>
+      <span class="guide-title" id="pageTitle">ภาพแคปหน้าจอ</span>
+    </div>
+
+    <!-- Edit Tools (เหมือนใน Editor: กรอบ, ลูกศร, ไฮไลต์, เบลอ, สี, Undo) -->
+    <div class="edit-toolbar" id="editToolbar">
+      <button class="tool-btn active" id="toolNone" title="โหมดดูภาพปกติ">
+        <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+        ดูภาพ
+      </button>
+      <button class="tool-btn" id="toolRect" title="สี่เหลี่ยมกรอบเน้น">
+        <svg viewBox="0 0 24 24"><path d="M3 3h18v18H3V3zm2 2v14h14V5H5z"/></svg>
+        กรอบ (Box)
+      </button>
+      <button class="tool-btn" id="toolArrow" title="ลูกศรชี้จุด">
+        <svg viewBox="0 0 24 24"><path d="M12 2l-1.41 1.41L16.17 9H4v2h12.17l-5.58 5.59L12 18l8-8-8-8z"/></svg>
+        ลูกศร (Arrow)
+      </button>
+      <button class="tool-btn" id="toolHighlight" title="ไฮไลต์ข้อความ">
+        <svg viewBox="0 0 24 24"><path d="M20.71 5.63l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83a1 1 0 0 0 0-1.41zM3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+        ไฮไลต์
+      </button>
+
+      <!-- Color Palette -->
+      <div class="color-picker-wrapper">
+        <div class="color-dot active" data-color="#EF4444" style="background: #EF4444;" title="แดง"></div>
+        <div class="color-dot" data-color="#3B82F6" style="background: #3B82F6;" title="น้ำเงิน"></div>
+        <div class="color-dot" data-color="#10B981" style="background: #10B981;" title="เขียว"></div>
+        <div class="color-dot" data-color="#F59E0B" style="background: #F59E0B;" title="ส้มทอง"></div>
+        <div class="color-dot" data-color="#8B5CF6" style="background: #8B5CF6;" title="ม่วง"></div>
+      </div>
+
+      <button class="tool-btn" id="btnUndo" title="ย้อนกลับ (Ctrl+Z)">
+        <svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>
+        Undo
+      </button>
+      <button class="tool-btn" id="btnClear" title="ล้างรอยวาด">
+        <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        Clear
+      </button>
+    </div>
+
+    <div class="top-actions">
+      <button class="btn btn-mint" id="btnCopy">
+        <svg width="15" height="15" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
+          <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
+        </svg>
+        คัดลอก (Copy)
+      </button>
+
+      <button class="btn btn-primary" id="btnDownload">
+        <svg width="15" height="15" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+          <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+        </svg>
+        ดาวน์โหลด (Download)
+      </button>
+
+      <button class="btn btn-coral" id="btnAppend">
+        <svg width="15" height="15" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+        </svg>
+        เพิ่มเข้าคู่มือ
+      </button>
+
+      <button class="btn" id="btnThemeToggle" title="สลับโหมดมืด/สว่าง">
+        <span id="themeIcon">🌙</span>
+      </button>
+    </div>
+  </header>
+
+  <main id="previewContainer">
+    <div class="preview-card">
+      <div class="preview-header">
+        <span class="step-badge" id="captureBadge">Screenshot</span>
+        <div class="step-text-title" id="imageDesc">กำลังโหลดภาพตัวอย่าง...</div>
+      </div>
+
+      <div class="stage-wrapper" id="stageWrapper">
+        <div class="image-wrapper" id="imageWrapper">
+          <img src="" alt="Capture Preview" id="previewImg" class="stage-image" />
+          <canvas id="paintCanvas"></canvas>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="toastMsg">ดำเนินการสำเร็จ</div>
+
+  <script src="capture-preview.js"></script>
+</body>
+
+</html>

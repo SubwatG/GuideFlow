@@ -113,7 +113,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       viewportHeight: window.innerHeight,
       viewportWidth: window.innerWidth,
       scrollX: window.scrollX,
-      scrollY: window.scrollY
+      scrollY: window.scrollY,
+      dpr: window.devicePixelRatio || 1
     });
     return false;
   }
@@ -135,7 +136,133 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ ok: true });
     return false;
   }
+
+  if (message.type === "START_AREA_SELECTION") {
+    initAreaSelectionOverlay(message.actionType);
+    sendResponse({ ok: true });
+    return false;
+  }
 });
+
+let isSelectingArea = false;
+function initAreaSelectionOverlay(actionType) {
+  if (document.getElementById("gf-selection-overlay")) return;
+
+  const overlay = document.createElement("div");
+  overlay.id = "gf-selection-overlay";
+  overlay.style.cssText = `
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    z-index: 2147483646;
+    cursor: crosshair;
+    background: rgba(0, 0, 0, 0.25);
+    user-select: none;
+  `;
+
+  const banner = document.createElement("div");
+  banner.style.cssText = `
+    position: fixed;
+    top: 16px; left: 50%; transform: translateX(-50%);
+    background: #26394A; color: #FBFAF7;
+    padding: 8px 16px; border-radius: 20px;
+    font-size: 13px; font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    z-index: 2147483647; pointer-events: none;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  `;
+  banner.textContent = "ลากเมาส์ครอบพื้นที่ที่ต้องการแคป (กด ESC เพื่อยกเลิก)";
+  overlay.appendChild(banner);
+
+  const box = document.createElement("div");
+  box.id = "gf-selection-box";
+  box.style.cssText = `
+    position: fixed;
+    border: 2px dashed #3B82F6;
+    background: rgba(59, 130, 246, 0.15);
+    display: none;
+    pointer-events: none;
+    z-index: 2147483647;
+  `;
+  overlay.appendChild(box);
+
+  let startX = 0, startY = 0, isMouseDown = false;
+
+  function onMouseDown(e) {
+    if (e.button !== 0) return;
+    isMouseDown = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    box.style.left = `${startX}px`;
+    box.style.top = `${startY}px`;
+    box.style.width = "0px";
+    box.style.height = "0px";
+    box.style.display = "block";
+  }
+
+  function onMouseMove(e) {
+    if (!isMouseDown) return;
+    const currentX = e.clientX;
+    const currentY = e.clientY;
+    const left = Math.min(startX, currentX);
+    const top = Math.min(startY, currentY);
+    const width = Math.abs(currentX - startX);
+    const height = Math.abs(currentY - startY);
+
+    box.style.left = `${left}px`;
+    box.style.top = `${top}px`;
+    box.style.width = `${width}px`;
+    box.style.height = `${height}px`;
+  }
+
+  function onMouseUp(e) {
+    if (!isMouseDown) return;
+    isMouseDown = false;
+    const endX = e.clientX;
+    const endY = e.clientY;
+    const rect = {
+      left: Math.min(startX, endX),
+      top: Math.min(startY, endY),
+      width: Math.abs(endX - startX),
+      height: Math.abs(endY - startY),
+      dpr: window.devicePixelRatio || 1
+    };
+
+    // Remove overlay from DOM immediately before capturing screenshot so the dashed selection box and blue tint are never captured
+    cleanup();
+
+    if (rect.width < 10 || rect.height < 10) return; // Too small, cancel
+
+    // Wait a brief tick for browser to repaint without the selection box
+    setTimeout(() => {
+      chrome.runtime.sendMessage({
+        type: "CROP_AREA_CAPTURE",
+        rect,
+        actionType: actionType || "preview"
+      });
+    }, 60);
+  }
+
+  function onKeyDown(e) {
+    if (e.key === "Escape") {
+      cleanup();
+    }
+  }
+
+  function cleanup() {
+    overlay.removeEventListener("mousedown", onMouseDown);
+    window.removeEventListener("mousemove", onMouseMove);
+    window.removeEventListener("mouseup", onMouseUp);
+    window.removeEventListener("keydown", onKeyDown);
+    if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+  }
+
+  overlay.addEventListener("mousedown", onMouseDown);
+  window.addEventListener("mousemove", onMouseMove);
+  window.addEventListener("mouseup", onMouseUp);
+  window.addEventListener("keydown", onKeyDown);
+
+  document.documentElement.appendChild(overlay);
+}
 
 function showFeedback(x, y) {
   const dot = document.createElement("div");
