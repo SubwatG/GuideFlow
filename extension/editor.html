@@ -108,6 +108,43 @@
       color: #FFF;
     }
 
+    /* Highlight Style Toggle Segment */
+    .highlight-style-group {
+      display: inline-flex;
+      align-items: center;
+      background: #020617;
+      border-radius: 6px;
+      padding: 2px;
+      gap: 2px;
+      border: 1px solid var(--border);
+    }
+
+    .style-pill {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+      font-family: inherit;
+    }
+
+    .style-pill:hover {
+      color: #FFF;
+    }
+
+    .style-pill.active {
+      background: #1E293B;
+      color: #60A5FA;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+
     .color-picker-wrapper {
       display: flex;
       align-items: center;
@@ -217,7 +254,7 @@
     <div class="brand">
       <img src="icons/icon48.png" alt="GuideFlow" style="width: 24px; height: 24px; border-radius: 6px;" />
       <span>GuideFlow Editor</span>
-      <span style="font-size: 11px; font-weight: 600; color: #0066FF; background: rgba(0, 102, 255, 0.08); padding: 1px 6px; border-radius: 999px;">v1.2.0</span>
+      <span style="font-size: 11px; font-weight: 600; color: #0066FF; background: rgba(0, 102, 255, 0.08); padding: 1px 6px; border-radius: 999px;">v1.3.0</span>
     </div>
 
     <!-- Drawing Tools -->
@@ -234,6 +271,10 @@
         <svg viewBox="0 0 24 24"><path d="M20.71 5.63l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83a1 1 0 0 0 0-1.41zM3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
         ไฮไลต์
       </button>
+      <div class="highlight-style-group" id="highlightStyleGroup" title="รูปแบบไฮไลต์">
+        <button type="button" class="style-pill active" id="hlTranslucent" title="โปร่งแสง (มองเห็นข้อความด้านหลัง)">โปร่งแสง</button>
+        <button type="button" class="style-pill" id="hlSolid" title="ทึบ (แถบสีทึบ)">ทึบ</button>
+      </div>
       <button class="tool-btn" id="toolText" title="เพิ่มข้อความกำกับ">
         <svg viewBox="0 0 24 24"><path d="M5 4v3h5.5v12h3V7H19V4H5z"/></svg>
         ข้อความ

@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let baseTitle = "Capture";
   let currentColor = "#EF4444";
   let currentTool = "rect"; // rect, arrow, highlight, blur, text
+  let highlightOpacity = "translucent"; // 'translucent' (0.35) or 'solid' (1.0)
   let undoStack = [];
 
   // Load Pending Image with polling / message fallback
@@ -99,6 +100,36 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  // Highlight style / opacity selector
+  const hlTranslucent = document.getElementById("hlTranslucent");
+  const hlSolid = document.getElementById("hlSolid");
+
+  function updateHighlightMode(mode) {
+    highlightOpacity = mode;
+    if (hlTranslucent && hlSolid) {
+      hlTranslucent.classList.toggle("active", mode === "translucent");
+      hlSolid.classList.toggle("active", mode === "solid");
+    }
+  }
+
+  if (hlTranslucent) {
+    hlTranslucent.addEventListener("click", () => {
+      updateHighlightMode("translucent");
+      if (currentTool !== "highlight") {
+        tools.highlight.click();
+      }
+    });
+  }
+
+  if (hlSolid) {
+    hlSolid.addEventListener("click", () => {
+      updateHighlightMode("solid");
+      if (currentTool !== "highlight") {
+        tools.highlight.click();
+      }
+    });
+  }
+
   // Color dots
   const colorDots = document.querySelectorAll(".color-dot");
   colorDots.forEach((dot) => {
@@ -179,7 +210,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } else if (currentTool === "arrow") {
       drawArrow(ctx, startX, startY, currX, currY, currentColor);
     } else if (currentTool === "highlight") {
-      ctx.fillStyle = currentColor + "44"; // Translucent
+      ctx.fillStyle = highlightOpacity === "solid" ? currentColor : (currentColor + "55");
       ctx.fillRect(startX, startY, currX - startX, currY - startY);
     }
 
@@ -203,7 +234,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } else if (currentTool === "arrow") {
       drawArrow(ctx, startX, startY, currX, currY, currentColor);
     } else if (currentTool === "highlight") {
-      ctx.fillStyle = currentColor + "44";
+      ctx.fillStyle = highlightOpacity === "solid" ? currentColor : (currentColor + "55");
       ctx.fillRect(startX, startY, currX - startX, currY - startY);
     }
 

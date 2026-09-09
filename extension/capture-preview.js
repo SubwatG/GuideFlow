@@ -17,6 +17,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const toolRect = document.getElementById("toolRect");
   const toolArrow = document.getElementById("toolArrow");
   const toolHighlight = document.getElementById("toolHighlight");
+  const hlTranslucent = document.getElementById("hlTranslucent");
+  const hlSolid = document.getElementById("hlSolid");
   const btnUndo = document.getElementById("btnUndo");
   const btnClear = document.getElementById("btnClear");
   const colorDots = document.querySelectorAll(".color-dot");
@@ -25,6 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentImageTitle = "ภาพแคปหน้าจอ";
   let currentColor = "#EF4444";
   let currentTool = "none"; // 'none', 'rect', 'arrow', 'highlight', 'blur'
+  let highlightOpacity = "translucent"; // 'translucent' (0.35) or 'solid' (1.0)
   let undoStack = [];
   let isDrawing = false;
   let startX = 0;
@@ -98,6 +101,35 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   });
+
+  // Highlight opacity selection
+  function updateHighlightMode(mode) {
+    highlightOpacity = mode;
+    if (hlTranslucent && hlSolid) {
+      hlTranslucent.classList.toggle("active", mode === "translucent");
+      hlSolid.classList.toggle("active", mode === "solid");
+    }
+  }
+
+  if (hlTranslucent) {
+    hlTranslucent.addEventListener("click", () => {
+      updateHighlightMode("translucent");
+      // Auto activate highlight tool if currently on view/none
+      if (currentTool !== "highlight") {
+        toolHighlight.click();
+      }
+    });
+  }
+
+  if (hlSolid) {
+    hlSolid.addEventListener("click", () => {
+      updateHighlightMode("solid");
+      // Auto activate highlight tool if currently on view/none
+      if (currentTool !== "highlight") {
+        toolHighlight.click();
+      }
+    });
+  }
 
   // Color selection
   colorDots.forEach((dot) => {
@@ -197,7 +229,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } else if (currentTool === "arrow") {
       drawArrow(ctx, startX, startY, currX, currY, currentColor, lineWidth);
     } else if (currentTool === "highlight") {
-      ctx.fillStyle = currentColor + "44";
+      ctx.fillStyle = highlightOpacity === "solid" ? currentColor : (currentColor + "55");
       ctx.fillRect(startX, startY, currX - startX, currY - startY);
     }
 
@@ -223,7 +255,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } else if (currentTool === "arrow") {
       drawArrow(ctx, startX, startY, currX, currY, currentColor, lineWidth);
     } else if (currentTool === "highlight") {
-      ctx.fillStyle = currentColor + "44";
+      ctx.fillStyle = highlightOpacity === "solid" ? currentColor : (currentColor + "55");
       ctx.fillRect(startX, startY, currX - startX, currY - startY);
     }
 

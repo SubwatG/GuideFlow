@@ -174,6 +174,56 @@
       fill: #FFF;
     }
 
+    /* Highlight Style Toggle Segment */
+    .highlight-style-group {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.05);
+      border-radius: 6px;
+      padding: 2px;
+      gap: 2px;
+      border: 1px solid var(--border);
+    }
+
+    body.dark-theme .highlight-style-group {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .style-pill {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+      font-family: inherit;
+    }
+
+    .style-pill:hover {
+      color: var(--ink);
+    }
+
+    body.dark-theme .style-pill:hover {
+      color: #FFF;
+    }
+
+    .style-pill.active {
+      background: var(--card-bg);
+      color: var(--sky);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    body.dark-theme .style-pill.active {
+      background: #334155;
+      color: #60A5FA;
+    }
+
     .color-picker-wrapper {
       display: flex;
       align-items: center;
@@ -421,6 +471,12 @@
         <svg viewBox="0 0 24 24"><path d="M20.71 5.63l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83a1 1 0 0 0 0-1.41zM3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
         ไฮไลต์
       </button>
+
+      <!-- Highlight Opacity Mode Selector -->
+      <div class="highlight-style-group" id="highlightStyleGroup" title="รูปแบบไฮไลต์">
+        <button type="button" class="style-pill active" id="hlTranslucent" title="โปร่งแสง (มองเห็นข้อความด้านหลัง)">โปร่งแสง</button>
+        <button type="button" class="style-pill" id="hlSolid" title="ทึบ (แถบสีทึบ)">ทึบ</button>
+      </div>
 
       <!-- Color Palette -->
       <div class="color-picker-wrapper">
