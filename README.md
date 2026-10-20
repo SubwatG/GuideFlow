@@ -3,7 +3,7 @@
 A local, client-side browser extension for capturing step-by-step web workflows and generating interactive HTML documentation.
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Interactive%20Preview-brightgreen?style=for-the-badge&logo=googlechrome)](https://subwatg.github.io/GuideFlow/)
-[![Version](https://img.shields.io/badge/version-1.1.0-blue?style=for-the-badge)](https://github.com/SubwatG/GuideFlow/releases)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue?style=for-the-badge)](https://github.com/SubwatG/GuideFlow/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
 
 > 🚀 **[Try Live Interactive Demo / ทดลองเล่นคู่มือตัวอย่างจริง](https://subwatg.github.io/GuideFlow/)**
@@ -38,8 +38,8 @@ GuideFlow is an open-source, client-side Chromium extension that automates the c
 
 ### 3. System Requirements
 - Any Chromium-based browser supporting Manifest V3:
-  - Google Chrome (version 88+)
-  - Microsoft Edge (version 88+)
+  - Google Chrome (version 110+)
+  - Microsoft Edge (version 110+)
   - Brave Browser
   - Opera / Vivaldi / Arc
 
@@ -144,8 +144,8 @@ GuideFlow คือส่วนขยายสำหรับเว็บเบ�
 - **ความปลอดภัยและความเป็นส่วนตัว:** ข้อมูลทั้งหมดถูกประมวลผลและจัดเก็บบนเครื่องของผู้ใช้งานเท่านั้น ไม่มีการส่งข้อมูลออกสู่ภายนอก
 
 ### 3. เบราว์เซอร์ที่รองรับ
-- Google Chrome (เวอร์ชัน 88 ขึ้นไป)
-- Microsoft Edge (เวอร์ชัน 88 ขึ้นไป)
+- Google Chrome (เวอร์ชัน 110 ขึ้นไป)
+- Microsoft Edge (เวอร์ชัน 110 ขึ้นไป)
 - Brave Browser
 - Opera / Vivaldi / Arc
 
@@ -220,3 +220,36 @@ GuideFlow คือส่วนขยายสำหรับเว็บเบ�
 
 ## License
 This project is licensed under the [MIT License](LICENSE).
+
+
+## Reliability and privacy
+
+- Requires Chromium 110 or newer. Reload the unpacked extension and refresh existing web tabs after updating.
+- Recorder metadata uses labels and control types, never form values. Screenshots can still contain visible private information: use **ปิดข้อมูล (Redact)** to paint an opaque region before copying, downloading or appending the flattened image. Existing captures are not automatically scrubbed.
+- Full Page jobs run serially, respect Chrome screenshot quotas, check the source tab/document and restore scrolling and hidden fixed elements. Progress and cancellation are available in the capture tab. Switching tabs, navigation, changing page dimensions, timeouts and unsupported sizes produce an explicit error.
+- Full Page supports the top-level document. Cross-origin iframe click coordinates, independently scrolling panels, virtualized lists and unbounded infinite scrolling are not guaranteed. Capture limits: 64 million pixels, 32,767 pixels per dimension, 200 tiles and 120 seconds. Encoded images are limited to 32 MiB; a guide/import to 48 MiB and 1,000 steps.
+- Draft metadata and image Blobs commit together in IndexedDB. Image content is deduplicated. Legacy local drafts are removed only after a successful migration; conflicting edits or captures from a replaced guide are rejected. Stopping a recording drains already queued clicks; cancellation discards unfinished work.
+- JSON import validates structure, image format and decoded dimensions before replacing a saved draft. HTML exports render metadata as text and embed escaped data separately from runtime code. Exported files can be edited and re-exported without needing a server. The hosted demo loads local image assets; its standalone counterpart remains self-contained.
+- Annotation undo stores up to 100 drawing commands rather than full-frame snapshots. The history limit is visible; it does not silently discard existing marks.
+- UI fonts are local system fallbacks; the extension does not request Google Fonts.
+
+### การปรับปรุงความน่าเชื่อถือ
+
+บันทึกข้อมูลผ่านส่วนกลางเพื่อป้องกันขั้นตอนเขียนทับกัน จับ Full Page ทีละงานพร้อมปุ่มยกเลิก และแปลงพิกัดคลิกตามภาพเต็มหน้า ค่าในช่องกรอกข้อมูลจะไม่ถูกนำมาใส่คำอธิบาย แต่ผู้ใช้ยังต้องตรวจและปิดบังข้อมูลที่มองเห็นอยู่ในภาพด้วยเครื่องมือ **ปิดข้อมูล** ก่อนส่งออก การนำเข้า JSON จะตรวจสอบและบันทึกให้สำเร็จก่อนเปลี่ยนคู่มือเดิม
+
+Run the existing tests without process isolation in restricted Windows environments:
+
+```powershell
+node --test --test-isolation=none tests/*.test.js
+```
+
+Source-text smoke checks coexist with behavioral tests for capture scheduling, repository concurrency/recovery, import validation, export encoding and vector annotation undo. Passing these checks alone is not proof of compatibility with every website.
+
+
+To run the optional Chromium integration gate, point `GUIDEFLOW_BROWSER_MODULE` to an existing local Playwright module and run the same suite. The gate launches bundled Chromium with a temporary browser profile and a localhost fixture; it does not use your personal browser profile. It exercises legacy migration, an aborted IndexedDB transaction, worker restart, concurrent appends, safe import/export, full-page capture/cancellation, opaque redaction and both demos.
+
+```powershell
+$env:GUIDEFLOW_BROWSER_MODULE = 'C:\path\to\node_modules\playwright'
+node --test --test-isolation=none tests/*.test.js
+Remove-Item Env:GUIDEFLOW_BROWSER_MODULE
+```

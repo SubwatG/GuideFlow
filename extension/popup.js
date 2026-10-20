@@ -68,7 +68,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   btnStart.addEventListener("click", () => {
     const title = guideTitleInput.value.trim() || "คู่มือการใช้งานระบบ";
-    chrome.runtime.sendMessage({ type: "START_RECORDING", title, captureMode: captureModeSelect.value, append: false }, () => {
+    chrome.runtime.sendMessage({ type: "START_RECORDING", title, captureMode: captureModeSelect.value, append: false }, (res) => {
+      if (!res?.ok) { showFeedback(res?.error || "เริ่มบันทึกไม่สำเร็จ", true); return; }
       updateUI();
       window.close();
     });
@@ -76,7 +77,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   btnAppend.addEventListener("click", () => {
     const title = guideTitleInput.value.trim() || "คู่มือการใช้งานระบบ";
-    chrome.runtime.sendMessage({ type: "START_RECORDING", title, captureMode: captureModeSelect.value, append: true }, () => {
+    chrome.runtime.sendMessage({ type: "START_RECORDING", title, captureMode: captureModeSelect.value, append: true }, (res) => {
+      if (!res?.ok) { showFeedback(res?.error || "เริ่มบันทึกไม่สำเร็จ", true); return; }
       updateUI();
       window.close();
     });
@@ -94,7 +96,8 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   function stopAndOpenViewer() {
-    chrome.runtime.sendMessage({ type: "STOP_RECORDING" }, () => {
+    chrome.runtime.sendMessage({ type: "STOP_RECORDING" }, (res) => {
+      if (!res?.ok) { showFeedback(res?.error || "หยุดบันทึกไม่สำเร็จ", true); return; }
       updateUI();
       chrome.tabs.create({ url: chrome.runtime.getURL("viewer.html") });
     });
@@ -140,6 +143,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const btnTakeSnapshot = document.getElementById("btnTakeSnapshot");
   const snapshotFeedback = document.getElementById("snapshotFeedback");
+  const captureProgress = document.getElementById("captureProgress");
+  const btnCancelCapture = document.getElementById("btnCancelCapture");
+  function renderCaptureProgress(state) {
+    if (!state) return;
+    const busy = state.status === "capturing" && Date.now() - state.updatedAt < 130000;
+    btnCancelCapture.style.display = busy ? "block" : "none";
+    btnTakeSnapshot.disabled = busy;
+    captureProgress.textContent = busy ? `กำลังจับภาพ ${state.completed || 0}/${state.total || "…"}` : state.status === "error" ? state.error : "";
+  }
+  chrome.storage.local.get(["captureState"], result => renderCaptureProgress(result.captureState));
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === "local" && changes.captureState) renderCaptureProgress(changes.captureState.newValue);
+  });
+  btnCancelCapture.addEventListener("click", () => chrome.runtime.sendMessage({ type: "CANCEL_CAPTURE" }, result => {
+    if (!result?.ok) showFeedback(result?.error || "ยกเลิกไม่สำเร็จ", true);
+  }));
 
   function showFeedback(text, isError = false) {
     snapshotFeedback.style.display = "block";

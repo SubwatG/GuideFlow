@@ -1,5 +1,6 @@
 {
   "manifest_version": 3,
+  "minimum_chrome_version": "110",
   "name": "GuideFlow - Local Step Recorder",
   "version": "1.2.0",
   "description": "Capture screen and highlight click coordinates locally to generate step-by-step interactive documentation.",
