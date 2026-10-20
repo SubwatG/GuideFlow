@@ -11,8 +11,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnAppend = document.getElementById("btnAppend");
   const btnThemeToggle = document.getElementById("btnThemeToggle");
   const themeIcon = document.getElementById("themeIcon");
-
-  // Tool elements
   const toolNone = document.getElementById("toolNone");
   const toolRect = document.getElementById("toolRect");
   const toolArrow = document.getElementById("toolArrow");
@@ -23,82 +21,269 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnClear = document.getElementById("btnClear");
   const colorDots = document.querySelectorAll(".color-dot");
 
+  const MAX_HISTORY_COMMANDS = 100;
+  const MAX_CANVAS_PIXELS = 64_000_000;
+  const MAX_CANVAS_DIMENSION = 32_767;
+  const query = new URLSearchParams(typeof location === "undefined" ? "" : (location.search || ""));
+  const captureId = query.get("captureId");
+
   let currentImageData = "";
   let currentImageTitle = "ภาพแคปหน้าจอ";
+  let currentCaptureMode = "manual";
+  let currentRecordingId = null;
+  let sourceRecordingId = null;
+  let guideIdentity = { recordingId: null, revision: null, stepCount: 0 };
   let currentColor = "#EF4444";
-  let currentTool = "none"; // 'none', 'rect', 'arrow', 'highlight', 'blur'
-  let highlightOpacity = "translucent"; // 'translucent' (0.35) or 'solid' (1.0)
-  let undoStack = [];
+  let currentTool = "none";
+  let commands = [];
+  let highlightOpacity = "translucent";
   let isDrawing = false;
   let startX = 0;
   let startY = 0;
-  let snapshot = null;
+  let isAppending = false;
 
-  function showToast(text) {
+  function showToast(text, isError = false) {
     toastMsg.textContent = text;
     toastMsg.style.display = "block";
+    toastMsg.style.background = isError ? "#DC2626" : "#22C55E";
     setTimeout(() => {
       toastMsg.style.display = "none";
     }, 2800);
   }
 
-  // Theme Toggle
-  let isDark = localStorage.getItem("gf_preview_dark") === "true";
-  function applyTheme() {
-    if (isDark) {
-      document.body.classList.add("dark-theme");
-      themeIcon.textContent = "☀️";
-    } else {
-      document.body.classList.remove("dark-theme");
-      themeIcon.textContent = "🌙";
+  function sendRuntimeMessage(message, callback) {
+    if (typeof chrome === "undefined" || !chrome.runtime || !chrome.runtime.sendMessage) {
+      callback({ ok: false, error: "ไม่สามารถเชื่อมต่อกับ GuideFlow ได้" });
+      return;
+    }
+    try {
+      chrome.runtime.sendMessage(message, (response) => {
+        const runtimeError = chrome.runtime.lastError;
+        if (runtimeError) {
+          callback({ ok: false, error: runtimeError.message });
+          return;
+        }
+        callback(response || { ok: false, error: "ไม่ได้รับคำตอบจาก GuideFlow" });
+      });
+    } catch (error) {
+      callback({ ok: false, error: error.message || "ส่งคำขอไม่สำเร็จ" });
     }
   }
-  applyTheme();
 
+  function isValidPngDataUrl(dataUrl) {
+    if (typeof dataUrl !== "string") return false;
+    try {
+      if (typeof GuideFlowData !== "undefined" && GuideFlowData.safeImageUrl) GuideFlowData.safeImageUrl(dataUrl);
+    } catch (error) {
+      return false;
+    }
+    return /^data:image\/png;base64,[A-Za-z0-9+/]+=*$/i.test(dataUrl);
+  }
+
+  function isCanvasSizeAllowed(width, height) {
+    return Number.isInteger(width) && Number.isInteger(height) &&
+      width > 0 && height > 0 &&
+      width <= MAX_CANVAS_DIMENSION && height <= MAX_CANVAS_DIMENSION &&
+      width * height <= MAX_CANVAS_PIXELS;
+  }
+
+  function getStepCount(bundle) {
+    if (Array.isArray(bundle)) return bundle.length;
+    if (bundle && Array.isArray(bundle.steps)) return bundle.steps.length;
+    if (bundle && Array.isArray(bundle.session)) return bundle.session.length;
+    return 0;
+  }
+
+  function loadGuideIdentity() {
+    sendRuntimeMessage({ type: "GET_GUIDE" }, (response) => {
+      if (!response || !response.ok) return;
+      guideIdentity = {
+        recordingId: sourceRecordingId || guideIdentity.recordingId || response.recordingId || currentRecordingId || null,
+        revision: Number.isInteger(response.revision) ? response.revision : null,
+        stepCount: getStepCount(response.bundle)
+      };
+    });
+  }
+
+  function applyImage(dataUrl, title, metadata = {}) {
+    if (!isValidPngDataUrl(dataUrl)) {
+      showToast("ไม่พบภาพ PNG ที่ถูกต้อง กรุณาลองแคปใหม่อีกครั้ง", true);
+      return;
+    }
+    currentImageData = dataUrl;
+    currentImageTitle = title || "ภาพแคปหน้าจอ";
+    currentCaptureMode = metadata.captureMode || "manual";
+    currentRecordingId = metadata.recordingId || null;
+    if (currentRecordingId) {
+      sourceRecordingId = currentRecordingId;
+      guideIdentity.recordingId = currentRecordingId;
+    } else {
+      sourceRecordingId = null;
+      guideIdentity.recordingId = null;
+    }
+    pageTitle.textContent = currentImageTitle;
+    imageDesc.textContent = `ภาพตัวอย่างความละเอียดสูง — ${currentImageTitle}`;
+    previewImg.onload = () => {
+      const width = previewImg.naturalWidth || previewImg.width;
+      const height = previewImg.naturalHeight || previewImg.height;
+      if (!isCanvasSizeAllowed(width, height)) {
+        currentImageData = "";
+        showToast(`ภาพมีขนาดใหญ่เกินไป (สูงสุด ${MAX_CANVAS_PIXELS.toLocaleString()} พิกเซล)`, true);
+        return;
+      }
+      canvas.width = width;
+      canvas.height = height;
+      commands = [];
+      render();
+      loadGuideIdentity();
+    };
+    previewImg.onerror = () => {
+      currentImageData = "";
+      showToast("โหลดภาพไม่สำเร็จ กรุณาลองแคปใหม่อีกครั้ง", true);
+    };
+    previewImg.src = dataUrl;
+  }
+
+  function loadImage() {
+    if (captureId) {
+      sendRuntimeMessage({ type: "GET_CAPTURE_IMAGE", captureId }, (response) => {
+        const capture = response && response.capture;
+        if (response && response.ok && capture && capture.dataUrl) {
+          applyImage(capture.dataUrl, capture.title, {
+            recordingId: response.recordingId || capture.recordingId,
+            captureMode: capture.captureMode
+          });
+          return;
+        }
+        showToast(`ไม่สามารถโหลดภาพแคปนี้ได้: ${(response && response.error) || "ไม่พบรายการแคป"}`, true);
+      });
+      return;
+    }
+
+    // Legacy fallback for preview tabs opened without a captureId.
+    if (typeof chrome === "undefined" || !chrome.storage || !chrome.storage.local) return;
+    chrome.storage.local.get(["singleCapturePreview"], (response) => {
+      if (response.singleCapturePreview && response.singleCapturePreview.dataUrl) {
+        applyImage(response.singleCapturePreview.dataUrl, response.singleCapturePreview.title, response.singleCapturePreview);
+        return;
+      }
+      let attempts = 0;
+      const timer = setInterval(() => {
+        attempts += 1;
+        chrome.storage.local.get(["singleCapturePreview"], (retryResponse) => {
+          const capture = retryResponse.singleCapturePreview;
+          if (capture && capture.dataUrl) {
+            clearInterval(timer);
+            applyImage(capture.dataUrl, capture.title, capture);
+          } else if (attempts > 10) {
+            clearInterval(timer);
+            imageDesc.textContent = "ไม่พบข้อมูลรูปภาพ กรุณาลองแคปใหม่อีกครั้ง";
+          }
+        });
+      }, 200);
+    });
+
+    if (chrome.storage.onChanged) {
+      chrome.storage.onChanged.addListener((changes, area) => {
+        if (area !== "local" || !changes.singleCapturePreview || !changes.singleCapturePreview.newValue) return;
+        const capture = changes.singleCapturePreview.newValue;
+        if (capture.dataUrl) applyImage(capture.dataUrl, capture.title, capture);
+      });
+    }
+  }
+
+  function activeCommands() {
+    const active = [];
+    for (const command of commands) {
+      if (command.type === "clear") active.length = 0;
+      else active.push(command);
+    }
+    return active;
+  }
+
+  function drawArrow(context, fromX, fromY, toX, toY, color, lineWidth) {
+    const headlen = 16;
+    const angle = Math.atan2(toY - fromY, toX - fromX);
+    context.strokeStyle = color;
+    context.fillStyle = color;
+    context.lineWidth = lineWidth;
+    context.beginPath();
+    context.moveTo(fromX, fromY);
+    context.lineTo(toX, toY);
+    context.stroke();
+    context.beginPath();
+    context.moveTo(toX, toY);
+    context.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+    context.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+    context.closePath();
+    context.fill();
+  }
+
+  function drawCommand(command) {
+    const lineWidth = Math.max(3, Math.round(canvas.width / 400));
+    ctx.save();
+    if (command.type === "rect") {
+      ctx.strokeStyle = command.color;
+      ctx.lineWidth = command.lineWidth || lineWidth;
+      ctx.strokeRect(command.x, command.y, command.width, command.height);
+    } else if (command.type === "redact") {
+      ctx.fillStyle = "#000000";
+      ctx.globalAlpha = 1;
+      ctx.fillRect(command.x, command.y, command.width, command.height);
+    } else if (command.type === "arrow") {
+      drawArrow(ctx, command.fromX, command.fromY, command.toX, command.toY, command.color, command.lineWidth || lineWidth);
+    } else if (command.type === "highlight") {
+      ctx.fillStyle = command.fillStyle;
+      ctx.fillRect(command.x, command.y, command.width, command.height);
+    }
+    ctx.restore();
+  }
+
+  function render(temporaryCommand = null) {
+    if (!canvas.width || !canvas.height) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (const command of activeCommands()) drawCommand(command);
+    if (temporaryCommand) drawCommand(temporaryCommand);
+  }
+
+  function commitCommand(command) {
+    if (commands.length >= MAX_HISTORY_COMMANDS) {
+      showToast(`แก้ไขได้สูงสุด ${MAX_HISTORY_COMMANDS} รายการต่อภาพ`, true);
+      return false;
+    }
+    commands.push(command);
+    render();
+    return true;
+  }
+
+  function restoreLastState() {
+    if (!commands.length) return;
+    commands.pop();
+    render();
+  }
+
+  let isDark = localStorage.getItem("gf_preview_dark") === "true";
+  function applyTheme() {
+    if (isDark) document.body.classList.add("dark-theme");
+    else document.body.classList.remove("dark-theme");
+    themeIcon.textContent = isDark ? "☀️" : "🌙";
+  }
+  applyTheme();
   btnThemeToggle.addEventListener("click", () => {
     isDark = !isDark;
     localStorage.setItem("gf_preview_dark", isDark ? "true" : "false");
     applyTheme();
   });
 
-  function saveState() {
-    undoStack.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-    if (undoStack.length > 25) undoStack.shift();
-  }
-
-  function restoreLastState() {
-    if (undoStack.length > 1) {
-      undoStack.pop();
-      const last = undoStack[undoStack.length - 1];
-      ctx.putImageData(last, 0, 0);
-    }
-  }
-
-  btnUndo.addEventListener("click", restoreLastState);
-  btnClear.addEventListener("click", () => {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    saveState();
-  });
-
-  // Tool Switching
-  const tools = {
-    none: toolNone,
-    rect: toolRect,
-    arrow: toolArrow,
-    highlight: toolHighlight
-  };
-
-  Object.entries(tools).forEach(([name, btn]) => {
-    if (!btn) return;
-    btn.addEventListener("click", () => {
-      Object.values(tools).forEach((b) => b && b.classList.remove("active"));
-      btn.classList.add("active");
+  const tools = { none: toolNone, rect: toolRect, arrow: toolArrow, highlight: toolHighlight, redact: document.getElementById("toolRedact") };
+  Object.entries(tools).forEach(([name, button]) => {
+    if (!button) return;
+    button.addEventListener("click", () => {
+      Object.values(tools).forEach((item) => item && item.classList.remove("active"));
+      button.classList.add("active");
       currentTool = name;
-      if (currentTool === "none") {
-        canvas.classList.remove("drawing-mode");
-      } else {
-        canvas.classList.add("drawing-mode");
-      }
+      if (currentTool === "none") canvas.classList.remove("drawing-mode");
+      else canvas.classList.add("drawing-mode");
     });
   });
 
@@ -134,293 +319,152 @@ document.addEventListener("DOMContentLoaded", () => {
   // Color selection
   colorDots.forEach((dot) => {
     dot.addEventListener("click", () => {
-      colorDots.forEach((d) => d.classList.remove("active"));
+      colorDots.forEach((item) => item.classList.remove("active"));
       dot.classList.add("active");
-      currentColor = dot.getAttribute("data-color");
+      currentColor = dot.getAttribute("data-color") || currentColor;
     });
   });
+  btnUndo.addEventListener("click", restoreLastState);
+  btnClear.addEventListener("click", () => commitCommand({ type: "clear" }));
 
-  // Load Image
-  function applyImage(dataUrl, title) {
-    if (!dataUrl) return;
-    currentImageData = dataUrl;
-    currentImageTitle = title || "ภาพแคปหน้าจอ";
-    pageTitle.textContent = currentImageTitle;
-    imageDesc.textContent = `ภาพตัวอย่างความละเอียดสูง — ${currentImageTitle}`;
-    previewImg.src = dataUrl;
-    previewImg.onload = () => {
-      // Sync canvas coordinate resolution to image natural size
-      canvas.width = previewImg.naturalWidth;
-      canvas.height = previewImg.naturalHeight;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      undoStack = [];
-      saveState();
-    };
-  }
-
-  function loadImage() {
-    if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
-      chrome.storage.local.get(["singleCapturePreview"], (res) => {
-        if (res.singleCapturePreview && res.singleCapturePreview.dataUrl) {
-          applyImage(res.singleCapturePreview.dataUrl, res.singleCapturePreview.title);
-        } else {
-          let attempts = 0;
-          const timer = setInterval(() => {
-            attempts++;
-            chrome.storage.local.get(["singleCapturePreview"], (retryRes) => {
-              if (retryRes.singleCapturePreview && retryRes.singleCapturePreview.dataUrl) {
-                clearInterval(timer);
-                applyImage(retryRes.singleCapturePreview.dataUrl, retryRes.singleCapturePreview.title);
-              } else if (attempts > 10) {
-                clearInterval(timer);
-                imageDesc.textContent = "ไม่พบข้อมูลรูปภาพ กรุณาลองแคปใหม่อีกครั้ง";
-              }
-            });
-          }, 200);
-        }
-      });
-
-      chrome.storage.onChanged.addListener((changes, area) => {
-        if (area === "local" && changes.singleCapturePreview && changes.singleCapturePreview.newValue) {
-          const cap = changes.singleCapturePreview.newValue;
-          applyImage(cap.dataUrl, cap.title);
-        }
-      });
-    }
-  }
-
-  loadImage();
-
-  // Canvas Mouse Coordinates (scaled from display CSS size to natural canvas pixel size)
-  function getCanvasCoords(e) {
+  function getCanvasCoords(event) {
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
     return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY
+      x: (event.clientX - rect.left) * scaleX,
+      y: (event.clientY - rect.top) * scaleY
     };
   }
 
-  canvas.addEventListener("mousedown", (e) => {
-    if (currentTool === "none") return;
-    isDrawing = true;
-    const coords = getCanvasCoords(e);
+  function createShapeCommand(endX, endY) {
+    const lineWidth = Math.max(3, Math.round(canvas.width / 400));
+    if (currentTool === "rect") {
+      return { type: "rect", x: startX, y: startY, width: endX - startX, height: endY - startY, color: currentColor, lineWidth };
+    }
+    if (currentTool === "arrow") {
+      return { type: "arrow", fromX: startX, fromY: startY, toX: endX, toY: endY, color: currentColor, lineWidth };
+    }
+    if (currentTool === "highlight") {
+      return { type: "highlight", x: startX, y: startY, width: endX - startX, height: endY - startY, color: currentColor, fillStyle: highlightOpacity === "solid" ? currentColor : (currentColor + "55") };
+    }
+    if (currentTool === "redact") {
+      return { type: "redact", x: startX, y: startY, width: endX - startX, height: endY - startY };
+    }
+    return null;
+  }
+
+  canvas.addEventListener("mousedown", (event) => {
+    if (event.button !== 0 || currentTool === "none") return;
+    const coords = getCanvasCoords(event);
     startX = coords.x;
     startY = coords.y;
-    snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    isDrawing = true;
   });
-
-  window.addEventListener("mousemove", (e) => {
-    if (!isDrawing || currentTool === "none") return;
-    const coords = getCanvasCoords(e);
-    const currX = coords.x;
-    const currY = coords.y;
-
-    ctx.putImageData(snapshot, 0, 0);
-    ctx.save();
-
-    const lineWidth = Math.max(3, Math.round(canvas.width / 400));
-
-    if (currentTool === "rect") {
-      ctx.strokeStyle = currentColor;
-      ctx.lineWidth = lineWidth;
-      ctx.strokeRect(startX, startY, currX - startX, currY - startY);
-    } else if (currentTool === "arrow") {
-      drawArrow(ctx, startX, startY, currX, currY, currentColor, lineWidth);
-    } else if (currentTool === "highlight") {
-      ctx.fillStyle = highlightOpacity === "solid" ? currentColor : (currentColor + "55");
-      ctx.fillRect(startX, startY, currX - startX, currY - startY);
-    }
-
-    ctx.restore();
+  window.addEventListener("mousemove", (event) => {
+    if (!isDrawing) return;
+    const coords = getCanvasCoords(event);
+    render(createShapeCommand(coords.x, coords.y));
   });
-
-  window.addEventListener("mouseup", (e) => {
-    if (!isDrawing || currentTool === "none") return;
+  window.addEventListener("mouseup", (event) => {
+    if (!isDrawing) return;
     isDrawing = false;
-    const coords = getCanvasCoords(e);
-    const currX = coords.x;
-    const currY = coords.y;
-
-    ctx.putImageData(snapshot, 0, 0);
-    ctx.save();
-
-    const lineWidth = Math.max(3, Math.round(canvas.width / 400));
-
-    if (currentTool === "rect") {
-      ctx.strokeStyle = currentColor;
-      ctx.lineWidth = lineWidth;
-      ctx.strokeRect(startX, startY, currX - startX, currY - startY);
-    } else if (currentTool === "arrow") {
-      drawArrow(ctx, startX, startY, currX, currY, currentColor, lineWidth);
-    } else if (currentTool === "highlight") {
-      ctx.fillStyle = highlightOpacity === "solid" ? currentColor : (currentColor + "55");
-      ctx.fillRect(startX, startY, currX - startX, currY - startY);
-    }
-
-    ctx.restore();
-    saveState();
+    const coords = getCanvasCoords(event);
+    const command = createShapeCommand(coords.x, coords.y);
+    if (command) commitCommand(command);
   });
 
-  function drawArrow(ctx, fromX, fromY, toX, toY, color, lineWidth) {
-    const headlen = 16;
-    const angle = Math.atan2(toY - fromY, toX - fromX);
-    ctx.strokeStyle = color;
-    ctx.fillStyle = color;
-    ctx.lineWidth = lineWidth;
-    ctx.beginPath();
-    ctx.moveTo(fromX, fromY);
-    ctx.lineTo(toX, toY);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(toX, toY);
-    ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
-    ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
-    ctx.closePath();
-    ctx.fill();
-  }
-
-  function applyPixelBlur(ctx, imgElement, x, y, width, height) {
-    if (width < 2 || height < 2) return;
-    const tempCanvas = document.createElement("canvas");
-    tempCanvas.width = canvas.width;
-    tempCanvas.height = canvas.height;
-    const tCtx = tempCanvas.getContext("2d", { willReadFrequently: true });
-    // Draw base screenshot and current canvas annotations so blur covers whatever is underneath
-    tCtx.drawImage(imgElement, 0, 0);
-    tCtx.drawImage(canvas, 0, 0);
-
-    const imgData = tCtx.getImageData(x, y, width, height);
-    const data = imgData.data;
-
-    // Distinct, heavy mosaic block size for privacy censorship (18px - 36px)
-    const blockSize = Math.max(18, Math.min(36, Math.round(Math.min(width, height) / 5)));
-
-    for (let py = 0; py < height; py += blockSize) {
-      for (let px = 0; px < width; px += blockSize) {
-        let r = 0, g = 0, b = 0, count = 0;
-        const curBlockW = Math.min(blockSize, width - px);
-        const curBlockH = Math.min(blockSize, height - py);
-
-        for (let dy = 0; dy < curBlockH; dy++) {
-          for (let dx = 0; dx < curBlockW; dx++) {
-            const idx = ((py + dy) * width + (px + dx)) * 4;
-            r += data[idx];
-            g += data[idx + 1];
-            b += data[idx + 2];
-            count++;
-          }
-        }
-        if (count > 0) {
-          r = Math.floor(r / count);
-          g = Math.floor(g / count);
-          b = Math.floor(b / count);
-          for (let dy = 0; dy < curBlockH; dy++) {
-            for (let dx = 0; dx < curBlockW; dx++) {
-              const idx = ((py + dy) * width + (px + dx)) * 4;
-              // Add slight pixel grid border contrast so the mosaic blocks stand out clearly
-              const isGridEdge = (dx === 0 || dy === 0) && curBlockW > 6 && curBlockH > 6;
-              data[idx] = isGridEdge ? Math.max(0, r - 25) : r;
-              data[idx + 1] = isGridEdge ? Math.max(0, g - 25) : g;
-              data[idx + 2] = isGridEdge ? Math.max(0, b - 25) : b;
-              data[idx + 3] = 255;
-            }
-          }
-        }
-      }
-    }
-    ctx.putImageData(imgData, x, y);
-  }
-
-  // Flatten Base Image + Drawn Overlay
   function getFlattenedDataUrl() {
     const finalCanvas = document.createElement("canvas");
     finalCanvas.width = canvas.width;
     finalCanvas.height = canvas.height;
-    const fCtx = finalCanvas.getContext("2d");
-    fCtx.drawImage(previewImg, 0, 0);
-    fCtx.drawImage(canvas, 0, 0);
+    const finalContext = finalCanvas.getContext("2d");
+    finalContext.drawImage(previewImg, 0, 0);
+    finalContext.drawImage(canvas, 0, 0);
     return finalCanvas.toDataURL("image/png");
   }
 
-  // Copy Action
   btnCopy.addEventListener("click", async () => {
     if (!currentImageData) return;
     const finalDataUrl = getFlattenedDataUrl();
     try {
-      const res = await fetch(finalDataUrl);
-      const blob = await res.blob();
-      await navigator.clipboard.write([
-        new ClipboardItem({ [blob.type || "image/png"]: blob })
-      ]);
+      const response = await fetch(finalDataUrl);
+      const blob = await response.blob();
+      await navigator.clipboard.write([new ClipboardItem({ [blob.type || "image/png"]: blob })]);
       showToast("คัดลอกภาพลงคลิปบอร์ดแล้ว!");
-    } catch (err) {
-      const a = document.createElement("a");
-      a.href = finalDataUrl;
-      a.download = `guideflow_capture_${Date.now()}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      showToast("บันทึกไฟล์ภาพให้แทนเนื่องจากสิทธิ์คลิปบอร์ด");
+    } catch (error) {
+      const link = document.createElement("a");
+      link.href = finalDataUrl;
+      link.download = `guideflow_capture_${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast("บันทึกไฟล์ภาพให้แทนเนื่องจากสิทธิ์คลิปบอร์ด", true);
     }
   });
 
-  // Download Action
   btnDownload.addEventListener("click", () => {
     if (!currentImageData) return;
-    const finalDataUrl = getFlattenedDataUrl();
-    const a = document.createElement("a");
-    a.href = finalDataUrl;
+    const link = document.createElement("a");
+    link.href = getFlattenedDataUrl();
     const safeTitle = currentImageTitle.replace(/[/\\?%*:|"<>]/g, "-");
-    a.download = `guideflow_${safeTitle}_${Date.now()}.png`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    link.download = `guideflow_${safeTitle}_${Date.now()}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
     showToast("ดาวน์โหลดภาพเรียบร้อยแล้ว!");
   });
 
-  // Append Action
-  btnAppend.addEventListener("click", () => {
-    if (!currentImageData) return;
-    const finalDataUrl = getFlattenedDataUrl();
-    chrome.storage.local.get(["currentSession", "sessionMeta"], (res) => {
-      const currentSession = res.currentSession || [];
-      const sessionMeta = res.sessionMeta || {
-        title: "คู่มือการใช้งานระบบ",
-        startTime: Date.now()
-      };
-      const now = Date.now();
-      const step = {
-        id: "step_" + now + "_" + currentSession.length,
-        timestamp: now,
-        action: "แคปหน้าจอ",
-        elementTag: "screen",
-        elementText: "Manual Screen Capture",
-        description: `แคปหน้าจอ ${currentImageTitle}`,
-        coords: null,
-        viewport: null,
-        screenshot: finalDataUrl,
-        screenshots: [finalDataUrl],
-        captureMode: "manual"
-      };
-      currentSession.push(step);
-      chrome.storage.local.set({ currentSession, sessionMeta }, () => {
-        showToast(`เพิ่มเป็นขั้นตอนที่ ${currentSession.length} ในคู่มือแล้ว!`);
-      });
+  function appendStep() {
+    if (!currentImageData || !canvas.width || !canvas.height || isAppending) return;
+    isAppending = true;
+    btnAppend.disabled = true;
+    const timestamp = Date.now();
+    const dataUrl = getFlattenedDataUrl();
+    const step = {
+      id: globalThis.crypto?.randomUUID?.() || `step_${timestamp}_${Math.random().toString(36).slice(2)}`,
+      timestamp,
+      action: "แคปหน้าจอ",
+      elementTag: "screen",
+      elementText: "Manual Screen Capture",
+      description: `แคปหน้าจอ ${currentImageTitle}`,
+      coords: null,
+      viewport: null,
+      screenshot: dataUrl,
+      screenshots: [dataUrl],
+      captureMode: currentCaptureMode
+    };
+    sendRuntimeMessage({
+      type: "APPEND_STEP",
+      step,
+      recordingId: guideIdentity.recordingId || currentRecordingId,
+      revision: guideIdentity.revision
+    }, (response) => {
+      isAppending = false;
+      btnAppend.disabled = false;
+      if (!response || !response.ok) {
+        showToast(`เพิ่มเข้าคู่มือไม่สำเร็จ: ${(response && response.error) || "ไม่ทราบสาเหตุ"}`, true);
+        return;
+      }
+      guideIdentity.recordingId = response.recordingId || guideIdentity.recordingId || currentRecordingId;
+      guideIdentity.revision = Number.isInteger(response.revision) ? response.revision : guideIdentity.revision;
+      guideIdentity.stepCount += 1;
+      showToast(`เพิ่มเป็นขั้นตอนที่ ${response.stepCount || guideIdentity.stepCount} ในคู่มือแล้ว!`);
     });
-  });
+  }
 
-  // Keyboard Shortcuts
-  window.addEventListener("keydown", (e) => {
-    if ((e.ctrlKey || e.metaKey) && (e.key === "c" || e.key === "C")) {
+  btnAppend.addEventListener("click", appendStep);
+
+  window.addEventListener("keydown", (event) => {
+    if ((event.ctrlKey || event.metaKey) && (event.key === "c" || event.key === "C")) {
       btnCopy.click();
-    } else if ((e.ctrlKey || e.metaKey) && (e.key === "s" || e.key === "S")) {
-      e.preventDefault();
+    } else if ((event.ctrlKey || event.metaKey) && (event.key === "s" || event.key === "S")) {
+      event.preventDefault();
       btnDownload.click();
-    } else if ((e.ctrlKey || e.metaKey) && (e.key === "z" || e.key === "Z")) {
+    } else if ((event.ctrlKey || event.metaKey) && (event.key === "z" || event.key === "Z")) {
       restoreLastState();
     }
   });
+
+  loadImage();
 });

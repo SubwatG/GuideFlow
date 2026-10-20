@@ -16,7 +16,68 @@ let isZenMode = false;
 let isAutoFocusActive = false;
 let isSpotlightVisible = true;
 
+// Data remains separate from executable viewer code; replacement callbacks preserve $ tokens.
+function createStandaloneExport(htmlTemplate, runtimeJs, bundle) {
+  const safeData = GuideFlowData.serializeForHtml(GuideFlowData.validateBundle(bundle));
+  const dataTag = '<script id="guideflow-data" type="application/json">' + safeData + '<' + '/script>';
+  const safeCode = runtimeJs.replace(/<\/script/gi, "<\\/script");
+  const runtimeTag = '<script id="guideflow-runtime">' + safeCode + '<' + '/script>';
+  const dataPattern = /<script\b[^>]*id=["']guideflow-data["'][^>]*>[\s\S]*?<\/script\s*>/i;
+  const runtimePattern = /<script\b[^>]*id=["']guideflow-runtime["'][^>]*>[\s\S]*?<\/script\s*>/i;
+  let html = htmlTemplate.replace(/<script\b[^>]*src=["']guide-data\.js["'][^>]*>\s*<\/script\s*>/i, "");
+  html = html.replace(/<script\b[^>]*id=["']guideflow-demo-data["'][^>]*>[\s\S]*?<\/script\s*>/i, "");
+  html = html.replace(dataPattern, "");
+  if (runtimePattern.test(html)) return html.replace(runtimePattern, () => dataTag + runtimeTag);
+  return html.replace(/<script\b[^>]*src=["']viewer\.js["'][^>]*>\s*<\/script\s*>/i, () => dataTag + runtimeTag);
+}
+
+async function hydrateDemoAssets(input) {
+  const bundle = JSON.parse(JSON.stringify(input));
+  const cache = new Map();
+  async function image(value) {
+    if (typeof value !== "string" || !value.startsWith("assets/")) return GuideFlowData.safeImageUrl(value);
+    const match = /^assets\/demo-([a-f0-9]{64})\.(png|jpeg|webp|gif)$/.exec(value);
+    if (!match) throw new Error("Invalid demo image asset");
+    if (!cache.has(value)) cache.set(value, (async () => {
+      const response = await fetch(value);
+      if (!response.ok) throw new Error("Demo image asset could not be loaded");
+      const buffer = await response.arrayBuffer();
+      const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", buffer)), byte => byte.toString(16).padStart(2, "0")).join("");
+      if (hash !== match[1]) throw new Error("Demo image integrity check failed");
+      const bytes = new Uint8Array(buffer);
+      let binary = "";
+      for (let offset = 0; offset < bytes.length; offset += 32768) binary += String.fromCharCode(...bytes.subarray(offset, offset + 32768));
+      return GuideFlowData.safeImageUrl(`data:image/${match[2]};base64,` + btoa(binary));
+    })());
+    return cache.get(value);
+  }
+  for (const step of bundle.session) {
+    step.screenshot = await image(step.screenshot);
+    if (step.screenshots) step.screenshots = await Promise.all(step.screenshots.map(image));
+  }
+  return GuideFlowData.validateBundle(bundle);
+}
+
 function startApp() {
+  let guideRevision = 0, guideRecordingId = null, pendingSaves = 0;
+  let saveQueue = Promise.resolve();
+  const isExtension = typeof chrome !== "undefined" && !!chrome.runtime?.id && !!chrome.storage?.local;
+  function guideMessage(message) {
+    return new Promise((resolve, reject) => chrome.runtime.sendMessage(message, response => {
+      const error = chrome.runtime.lastError;
+      if (error || !response?.ok) reject(new Error(error?.message || response?.error || "GuideFlow did not respond"));
+      else resolve(response);
+    }));
+  }
+  async function reloadGuide() {
+    const response = await guideMessage({ type: "GET_GUIDE" });
+    const bundle = GuideFlowData.validateBundle(response.bundle);
+    guideRevision = response.revision; guideRecordingId = response.recordingId;
+    currentSession = bundle.session; sessionMeta = bundle.meta; isEditMode = true;
+    applyModeUI();
+    if (currentSession.length) initViewer(); else showEmpty();
+    setupEditListeners();
+  }
   // Elements
   const displayTitle = document.getElementById("displayTitle");
   const mainHeader = document.getElementById("mainHeader");
@@ -149,80 +210,23 @@ function startApp() {
   const urlParams = new URLSearchParams(window.location.search);
   const isSingleCaptureMode = urlParams.get("mode") === "capture";
 
-  // Listen for storage changes in real-time (e.g. Cleared from popup or session reset)
-  if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.onChanged) {
+  if (isExtension && chrome.storage.onChanged) {
     chrome.storage.onChanged.addListener((changes, area) => {
-      if (area === "local") {
-        if (changes.currentSession) {
-          const newSession = changes.currentSession.newValue;
-          if (!newSession || newSession.length === 0) {
-            currentSession = [];
-            showEmpty();
-          } else {
-            currentSession = newSession;
-            initViewer();
-          }
-        }
-      }
+      if (area === "local" && changes.guideRevision && !pendingSaves) reloadGuide().catch(error => showToast(error.message));
     });
   }
-  // If it has chrome.runtime and chrome.storage -> In Extension Studio (Allow Editing)
-  // If window.__SCRIBE_DATA__ exists -> In Standalone Exported Mode (Allow Editing and Exporting)
-  if (window.__SCRIBE_DATA__ && window.__SCRIBE_DATA__.session && window.__SCRIBE_DATA__.session.length > 0) {
-    currentSession = window.__SCRIBE_DATA__.session;
-    sessionMeta = window.__SCRIBE_DATA__.meta || sessionMeta;
-    isEditMode = true; // EDIT / STUDIO MODE
-    applyModeUI();
-    initViewer();
-    setupEditListeners();
-  } else if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
-    if (isSingleCaptureMode) {
-      chrome.storage.local.get(["singleCapturePreview"], (res) => {
-        if (res.singleCapturePreview && res.singleCapturePreview.dataUrl) {
-          const cap = res.singleCapturePreview;
-          currentSession = [{
-            id: "capture_" + (cap.timestamp || Date.now()),
-            timestamp: cap.timestamp || Date.now(),
-            description: cap.title || "ภาพแคปหน้าจอ",
-            screenshot: cap.dataUrl,
-            screenshots: [cap.dataUrl]
-          }];
-          sessionMeta = { title: cap.title || "ภาพแคปหน้าจอ" };
-          isEditMode = true;
-          applyModeUI();
-          initViewer();
-          setupEditListeners();
-          // Show Copy and Download buttons specifically for single capture preview
-          if (btnCopySingle) btnCopySingle.style.display = "inline-flex";
-          if (btnDownloadSingle) btnDownloadSingle.style.display = "inline-flex";
-          // Hide timeline and doc view toggle if only single screenshot
-          const viewToggle = document.querySelector(".view-toggle");
-          if (viewToggle) viewToggle.style.display = "none";
-          if (timelineBar) timelineBar.style.display = "none";
-          if (btnPrev) btnPrev.style.display = "none";
-          if (btnNext) btnNext.style.display = "none";
-        } else {
-          showEmpty();
-        }
-      });
-    } else {
-      // Inside Extension Studio: Allow Editing
-      chrome.storage.local.get(["currentSession", "sessionMeta"], (res) => {
-        if (res.currentSession && res.currentSession.length > 0) {
-          currentSession = res.currentSession;
-          sessionMeta = res.sessionMeta || sessionMeta;
-          isEditMode = true; // EDIT / STUDIO MODE
-          applyModeUI();
-          initViewer();
-          setupEditListeners();
-        } else {
-          showEmpty();
-        }
-      });
-    }
-  } else {
-    showEmpty();
-  }
+  const embedded = document.getElementById("guideflow-data");
+  if (embedded || window.__SCRIBE_DATA__) {
+    try {
+      const bundle = GuideFlowData.validateBundle(embedded ? JSON.parse(embedded.textContent) : window.__SCRIBE_DATA__);
+      currentSession = bundle.session; sessionMeta = bundle.meta; isEditMode = true;
+      applyModeUI();
+      if (currentSession.length) initViewer(); else showEmpty();
+      setupEditListeners();
+    } catch (error) { showEmpty(); showToast(error.message); }
+  } else if (isExtension) {
+    reloadGuide().catch(error => { showEmpty(); showToast(error.message); });
+  } else { showEmpty(); isEditMode = true; applyModeUI(); setupEditListeners(); }
 
   function applyModeUI() {
     if (!isEditMode) {
@@ -260,15 +264,15 @@ function startApp() {
 
   function showEmpty() {
     displayTitle.textContent = "ยังไม่มีข้อมูลคู่มือ";
-    slidesContainer.innerHTML = `
-      <div class="empty-state">
-        <h2>ยังไม่มีขั้นตอนที่ถูกบันทึก</h2>
-        <p style="margin-top: 10px; line-height: 1.6;">เปิดหน้าเว็บที่ต้องการ แล้วกดไอคอน Extension เพื่อเริ่มบันทึก (Start Capture)<br>หรือกดปุ่ม <b>"นำเข้า"</b> ด้านบนเพื่อเปิดดูคู่มือที่มีอยู่</p>
-      </div>
-    `;
+    timelineBar.textContent = "";
+    slideImg.removeAttribute("src"); slideImg.style.display = "none";
+    slideStepTitle.textContent = "เริ่มบันทึกหรือนำเข้า JSON เพื่อเปิดคู่มือ";
+    spotlightRing.style.display = "none"; targetBox.style.display = "none";
+    docContainer.textContent = "ยังไม่มีขั้นตอนที่ถูกบันทึก";
   }
 
   function initViewer() {
+    slideImg.style.display = "";
     displayTitle.textContent = sessionMeta.title || "คู่มือการใช้งานระบบ";
     document.title = `${sessionMeta.title || "คู่มือการใช้งานระบบ"} — GuideFlow`;
     currentStepIndex = 0;
@@ -279,7 +283,7 @@ function startApp() {
   }
 
   function renderSlidesTimeline() {
-    timelineBar.innerHTML = "";
+    timelineBar.replaceChildren();
     currentSession.forEach((_, idx) => {
       const dot = document.createElement("div");
       dot.className = `timeline-dot ${idx === currentStepIndex ? "active" : ""}`;
@@ -355,53 +359,31 @@ function startApp() {
   }
 
   function renderDocView() {
-    docContainer.innerHTML = "";
+    docContainer.replaceChildren();
     currentSession.forEach((step, idx) => {
-      const card = document.createElement("div");
-      card.className = "doc-step-card";
-
-      let ringHtml = "";
+      const card = document.createElement("div"); card.className = "doc-step-card";
+      const header = document.createElement("div"); header.className = "doc-step-header";
+      const badge = document.createElement("span"); badge.className = "step-badge"; badge.textContent = `Step ${idx + 1}`;
+      const title = document.createElement("span"); title.className = "doc-step-title"; title.textContent = step.description || `ขั้นตอนที่ ${idx + 1}`;
+      header.append(badge, title);
+      const wrap = document.createElement("div"); wrap.className = "doc-step-image-wrap";
+      const screenshots = step.screenshots?.length ? step.screenshots : [step.screenshot];
+      screenshots.forEach((url, imageIndex) => {
+        const img = document.createElement("img"); img.src = GuideFlowData.safeImageUrl(url); img.alt = `Step ${idx + 1} ส่วนที่ ${imageIndex + 1}`; img.loading = "lazy";
+        wrap.appendChild(img);
+      });
       if (isSpotlightVisible && step.coords && step.coords.xPercent !== undefined) {
-        ringHtml = `
-          <div class="spotlight-ring" style="left: ${step.coords.xPercent}%; top: ${step.coords.yPercent}%;">
-            <div class="ring-pulse"></div>
-            <div class="ring-center-dot"></div>
-          </div>
-        `;
+        const ring = document.createElement("div"); ring.className = "spotlight-ring";
+        ring.style.left = `${step.coords.xPercent}%`; ring.style.top = `${step.coords.yPercent}%`;
+        for (const name of ["ring-pulse", "ring-center-dot"]) { const dot = document.createElement("div"); dot.className = name; ring.appendChild(dot); }
+        wrap.appendChild(ring);
       }
-
-      let tipHtml = "";
-      if (step.tipText) {
-        tipHtml = `
-          <div style="padding: 10px 20px; background: rgba(210,165,75,0.1); border-top: 1px solid rgba(210,165,75,0.2); font-size: 13px;">
-            <b style="color: #946914;">💡 ข้อแนะนำ:</b> ${step.tipText}
-          </div>
-        `;
-      }
-
-      const screenshots = Array.isArray(step.screenshots) && step.screenshots.length
-        ? step.screenshots
-        : [step.screenshot];
-      const imagesHtml = screenshots.map((screenshot, imageIndex) => `
-        <img src="${screenshot}" alt="Step ${idx + 1} ส่วนที่ ${imageIndex + 1}" />
-      `).join("");
-
-      card.innerHTML = `
-        <div class="doc-step-header">
-          <span class="step-badge">Step ${idx + 1}</span>
-          <span class="doc-step-title">${step.description || `ขั้นตอนที่ ${idx + 1}`}</span>
-        </div>
-        <div class="doc-step-image-wrap">
-          ${imagesHtml}
-          ${ringHtml}
-        </div>
-        ${tipHtml}
-      `;
+      card.append(header, wrap);
+      if (step.tipText) { const tip = document.createElement("div"); tip.className = "doc-step-tip"; tip.textContent = "💡 ข้อแนะนำ: " + step.tipText; card.appendChild(tip); }
       docContainer.appendChild(card);
     });
   }
 
-  /* --- ZOOM & PAN ENGINE --- */
   function applyTransform(smooth = false) {
     if (smooth) {
       panZoomContent.classList.add("smooth-focus");
@@ -692,7 +674,7 @@ function startApp() {
       if (currentSession[currentStepIndex]) {
         currentSession[currentStepIndex].description = slideStepTitle.textContent.trim();
         renderDocView();
-        saveToStorage();
+        saveToStorage().catch(() => {});
       }
     });
 
@@ -706,7 +688,7 @@ function startApp() {
         if (currentSession[currentStepIndex]) {
           delete currentSession[currentStepIndex].tipText;
           renderDocView();
-          saveToStorage();
+          saveToStorage().catch(() => {});
         }
       }
     });
@@ -715,7 +697,7 @@ function startApp() {
       if (currentSession[currentStepIndex]) {
         currentSession[currentStepIndex].tipText = slideNoteText.textContent.trim();
         renderDocView();
-        saveToStorage();
+        saveToStorage().catch(() => {});
       }
     });
 
@@ -732,7 +714,7 @@ function startApp() {
         renderSlidesTimeline();
         renderSlide(currentStepIndex);
         renderDocView();
-        saveToStorage();
+        saveToStorage().catch(() => {});
       }
     });
 
@@ -753,18 +735,27 @@ function startApp() {
       displayTitle.textContent = newTitle;
       document.title = `${newTitle} — GuideFlow`;
       titleModal.classList.remove("open");
-      saveToStorage();
+      saveToStorage().catch(() => {});
     });
   }
 
-  function saveToStorage() {
-    if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
-      if (currentSession && currentSession.length > 0) {
-        chrome.storage.local.set({ currentSession, sessionMeta });
-      } else {
-        chrome.storage.local.remove(["currentSession", "sessionMeta"]);
-      }
-    }
+  function saveToStorage(override, importing = false) {
+    let bundle;
+    try { bundle = GuideFlowData.validateBundle(override || { meta: sessionMeta, session: currentSession }); }
+    catch (error) { showToast(error.message); return Promise.reject(error); }
+    if (!isExtension) { window.__SCRIBE_DATA__ = bundle; return Promise.resolve(bundle); }
+    const recordingId = guideRecordingId;
+    pendingSaves++;
+    const save = saveQueue.then(async () => {
+      const result = await guideMessage({ type: "SAVE_GUIDE", bundle, expectedRevision: guideRevision, recordingId, importing });
+      guideRevision = result.revision; guideRecordingId = result.recordingId;
+      return bundle;
+    });
+    saveQueue = save.catch(async error => {
+      showToast(error.message);
+      await reloadGuide().catch(() => {});
+    }).finally(() => { pendingSaves--; });
+    return save;
   }
 
   // Print button
@@ -1123,81 +1114,25 @@ function startApp() {
     };
 
     const generateExport = (htmlTemplate, jsCode) => {
-      // Escape script tags inside embedded string/json literals so HTML parser won't terminate script early
-      const safeDataJson = JSON.stringify(bundleData).split("<" + "/script>").join("<\\/script>");
-      const safeJsCode = jsCode.split("<" + "/script>").join("<\\/script>");
-      
-      const tagScriptOpen = "<" + "script" + ">";
-      const tagScriptClose = "<" + "/script" + ">";
-      const searchTarget = '<' + 'script src="viewer.js">' + '<' + '/script>';
-
-      const standalone = htmlTemplate.replace(
-        searchTarget,
-        `${tagScriptOpen}\nwindow.__SCRIBE_DATA__ = ${safeDataJson};\n${safeJsCode}\n${tagScriptClose}`
-      );
-
+      const standalone = createStandaloneExport(htmlTemplate, jsCode, bundleData);
       const blob = new Blob([standalone], { type: "text/html;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      const filename = (sessionMeta.title || "guide").replace(/[/\\?%*:|"<>]/g, "-") + ".html";
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      a.href = url; a.download = (sessionMeta.title || "guide").replace(/[/\\?%*:|"<>]/g, "-") + ".html";
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     };
 
-    if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.getURL) {
-      fetch(chrome.runtime.getURL("viewer.html"))
-        .then(res => res.text())
-        .then(html => {
-          fetch(chrome.runtime.getURL("viewer.js"))
-            .then(jsRes => jsRes.text())
-            .then(jsContent => {
-              generateExport(html, jsContent);
-            });
-        });
+    if (isExtension) {
+      Promise.all(["viewer.html", "guide-data.js", "viewer.js"].map(file => fetch(chrome.runtime.getURL(file)).then(response => { if (!response.ok) throw new Error("Unable to load export template"); return response.text(); })))
+        .then(([html, dataJs, viewerJs]) => generateExport(html, dataJs + "\n" + viewerJs))
+        .catch(error => showToast(error.message));
     } else {
-      // In standalone mode, generate full updated standalone HTML
-      // In standalone mode, inline script contains viewer logic, so we extract JS or re-fetch template
-      fetch(window.location.href)
-        .then(res => res.text())
-        .then(currentHtml => {
-          const safeDataJson = JSON.stringify(bundleData).split("<" + "/script>").join("<\\/script>");
-          const tagScriptOpen = "<" + "script" + ">";
-          const tagScriptClose = "<" + "/script" + ">";
-          
-          let standalone = "";
-          const scriptRegex = new RegExp("<" + "script" + ">([\\s\\S]*?)<" + "/script" + ">", "i");
-          const match = currentHtml.match(scriptRegex);
-          if (match) {
-            // Extract the JS code part (everything after window.__SCRIBE_DATA__ = ...;)
-            let existingJs = match[1];
-            const scribeDataRegex = /window\.__SCRIBE_DATA__\s*=\s*[\s\S]*?;\s*/;
-            existingJs = existingJs.replace(scribeDataRegex, "");
-            
-            standalone = currentHtml.replace(
-              scriptRegex,
-              `${tagScriptOpen}\nwindow.__SCRIBE_DATA__ = ${safeDataJson};\n${existingJs}\n${tagScriptClose}`
-            );
-          } else {
-            standalone = currentHtml;
-          }
-
-          const blob = new Blob([standalone], { type: "text/html;charset=utf-8" });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          const filename = (sessionMeta.title || "guide").replace(/[/\\?%*:|"<>]/g, "-") + ".html";
-          a.href = url;
-          a.download = filename;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        });
+      const runtime = document.getElementById("guideflow-runtime");
+      if (!runtime) { showToast("เปิดคู่มือนี้ใน GuideFlow แล้วส่งออกใหม่เพื่ออัปเดตรูปแบบไฟล์"); return; }
+      generateExport(document.documentElement.outerHTML, runtime.textContent);
     }
   });
+
 
   // Export JSON Backup
   btnExportJson.addEventListener("click", () => {
@@ -1224,31 +1159,38 @@ function startApp() {
 
   // Import JSON
   btnImport.addEventListener("click", () => fileInput.click());
-  fileInput.addEventListener("change", (e) => {
+  fileInput.addEventListener("change", async e => {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
-        const data = JSON.parse(ev.target.result);
-        if (data.session) {
-          currentSession = data.session;
-          sessionMeta = data.meta || sessionMeta;
-        } else if (Array.isArray(data)) {
-          currentSession = data;
-        }
-        initViewer();
-        setupEditListeners();
-      } catch (err) {
-        alert("ไฟล์ JSON ไม่ถูกต้อง");
+    const originalRevision = guideRevision, originalRecordingId = guideRecordingId;
+    try {
+      if (file.size > 48 * 1024 * 1024) throw new Error("ไฟล์ใหญ่เกิน 48 MB");
+      const bundle = GuideFlowData.validateBundle(JSON.parse(await file.text()));
+      const imageUrls = new Set(bundle.session.flatMap(step => [step.screenshot, ...(step.screenshots || [])]));
+      if (imageUrls.size > 2000) throw new Error("จำนวนภาพมากเกินไป");
+      for (const url of imageUrls) {
+        const bitmap = await createImageBitmap(await (await fetch(url)).blob());
+        try {
+          if (bitmap.width > 32767 || bitmap.height > 32767 || bitmap.width * bitmap.height > 64000000) throw new Error("ภาพมีขนาดใหญ่เกินไป");
+        } finally { bitmap.close(); }
       }
-    };
-    reader.readAsText(file);
+      if (isExtension && (guideRevision !== originalRevision || guideRecordingId !== originalRecordingId)) throw new Error("คู่มือเปลี่ยนระหว่างนำเข้า กรุณาลองใหม่");
+      await saveToStorage(bundle, true);
+      currentSession = bundle.session; sessionMeta = bundle.meta; isEditMode = true;
+      applyModeUI();
+      if (currentSession.length) initViewer(); else showEmpty();
+      setupEditListeners(); showToast("นำเข้าและบันทึกคู่มือแล้ว");
+    } catch (error) { showToast("นำเข้าไม่สำเร็จ: " + error.message); }
+    finally { fileInput.value = ""; }
   });
+
 }
 
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", startApp);
-} else {
-  startApp();
+function bootGuideFlow() {
+  const packaged = document.getElementById("guideflow-demo-data");
+  if (!packaged) { startApp(); return; }
+  hydrateDemoAssets(JSON.parse(packaged.textContent)).then(bundle => { window.__SCRIBE_DATA__ = bundle; startApp(); })
+    .catch(error => { document.body.textContent = "ไม่สามารถเปิดคู่มือตัวอย่าง: " + error.message; });
 }
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bootGuideFlow);
+else bootGuideFlow();

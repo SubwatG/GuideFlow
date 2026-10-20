@@ -4,9 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GuideFlow Image Editor — ตกแต่งและแก้ไขภาพแคป</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Mali:wght@500;600;700&family=Noto+Sans+Thai+Looped:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
     :root {
@@ -28,7 +25,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: 'Noto Sans Thai Looped', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Thai", sans-serif;
       background: var(--bg);
       color: #F8FAFC;
       display: flex;
@@ -275,6 +272,10 @@
         <button type="button" class="style-pill active" id="hlTranslucent" title="โปร่งแสง (มองเห็นข้อความด้านหลัง)">โปร่งแสง</button>
         <button type="button" class="style-pill" id="hlSolid" title="ทึบ (แถบสีทึบ)">ทึบ</button>
       </div>
+      <button class="tool-btn" id="toolRedact" title="ปิดข้อมูลแบบทึบ">
+        <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4V4zm3 3v10h10V7H7z"/></svg>
+        ปิดข้อมูล
+      </button>
       <button class="tool-btn" id="toolText" title="เพิ่มข้อความกำกับ">
         <svg viewBox="0 0 24 24"><path d="M5 4v3h5.5v12h3V7H19V4H5z"/></svg>
         ข้อความ
@@ -316,6 +317,7 @@
 
   <div class="toast-msg" id="toastMsg">ดำเนินการเรียบร้อย!</div>
 
+  <script src="guide-data.js"></script>
   <script src="editor.js"></script>
 </body>
 </html>
